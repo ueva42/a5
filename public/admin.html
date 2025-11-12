@@ -1,208 +1,145 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Adminbereich – Temple of Logic</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Temple of Logic – Admin</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #101820;
-      color: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 100vh;
+      background: #0e0e0e;
+      color: #ddd;
+      font-family: "Segoe UI", sans-serif;
       margin: 0;
-      padding: 40px 0;
     }
-
-    h1 {
-      color: #00bcd4;
-      margin-bottom: 10px;
-    }
-
-    #logout {
-      position: absolute;
-      right: 20px;
-      top: 20px;
-      background: #ff5252;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    #logout:hover {
-      background: #e53935;
-    }
-
-    .card {
-      background: #1e2a38;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 0 10px rgba(0, 188, 212, 0.2);
-      width: 90%;
-      max-width: 600px;
-      margin-bottom: 30px;
-    }
-
-    input, button {
-      padding: 8px;
-      border-radius: 4px;
-      border: none;
-      margin: 4px;
-    }
-
-    input {
-      width: 70%;
-    }
-
-    button {
-      background: #00bcd4;
-      color: white;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0097a7;
-    }
-
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-
-    li {
-      background: #243447;
-      margin: 5px 0;
-      padding: 10px;
-      border-radius: 4px;
+    header {
+      background: #181818;
+      padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid #333;
     }
-
-    .active {
-      color: #00e676;
-      font-weight: bold;
-    }
-
-    .actions button {
-      margin-left: 6px;
-    }
-
-    .delete {
-      background: #f44336;
-    }
-    .delete:hover {
-      background: #d32f2f;
-    }
+    main { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
+    section { background: #1b1b1b; border-radius: 8px; padding: 1rem; border: 1px solid #333; }
+    input, button, select { width: 100%; margin-top: .5rem; padding: .5rem; border: 1px solid #444; border-radius: 5px; background: #222; color: #eee; }
+    button { cursor: pointer; background: #333; }
+    button:hover { background: #555; }
+    table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
+    th, td { border: 1px solid #333; padding: .5rem; }
+    th { background: #222; }
+    img { max-width: 80px; border-radius: 5px; }
+    .danger { background: #a00000; color: white; }
+    .danger:hover { background: #c00000; }
   </style>
 </head>
 <body>
-  <h1>Adminbereich</h1>
-  <button id="logout">Logout</button>
+  <header>
+    <h2>Temple of Logic – Adminbereich</h2>
+    <button id="logout">Logout</button>
+  </header>
+  <main>
+    <section>
+      <h3>Klassenverwaltung</h3>
+      <form id="classForm">
+        <input type="text" id="className" placeholder="Neue Klasse" required>
+        <button type="submit">Anlegen</button>
+      </form>
+      <table id="classTable"><thead><tr><th>Name</th><th>Aktiv</th><th>Aktionen</th></tr></thead><tbody></tbody></table>
+    </section>
 
-  <div class="card">
-    <h2>Neue Klasse anlegen</h2>
-    <form id="addClassForm">
-      <input type="text" id="className" placeholder="Klassenname" required />
-      <button type="submit">➕ Anlegen</button>
-    </form>
-  </div>
-
-  <div class="card">
-    <h2>Vorhandene Klassen</h2>
-    <ul id="classList"></ul>
-  </div>
+    <section>
+      <h3>Missionsverwaltung</h3>
+      <form id="missionForm" enctype="multipart/form-data">
+        <input type="text" name="title" placeholder="Titel" required>
+        <input type="number" name="xp_value" placeholder="XP-Wert" required>
+        <label><input type="checkbox" name="allow_upload"> Upload erlaubt?</label>
+        <input type="file" name="image" accept="image/*">
+        <button type="submit">Mission anlegen</button>
+      </form>
+      <table id="missionTable"><thead><tr><th>Bild</th><th>Titel</th><th>XP</th><th>Upload?</th><th>Aktion</th></tr></thead><tbody></tbody></table>
+    </section>
+  </main>
 
   <script>
-    const classList = document.getElementById("classList");
-
-    // --- Klassen laden ---
     async function loadClasses() {
-      classList.innerHTML = "<li>Lade Klassen...</li>";
       const res = await fetch("/api/admin/classes");
       const data = await res.json();
-
-      classList.innerHTML = "";
-      if (!data.length) {
-        classList.innerHTML = "<li>Keine Klassen vorhanden</li>";
-        return;
-      }
-
+      const tbody = document.querySelector("#classTable tbody");
+      tbody.innerHTML = "";
       data.forEach(c => {
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <span class="${c.is_active ? "active" : ""}">
-            ${c.name} ${c.is_active ? "(aktiv)" : ""}
-          </span>
-          <div class="actions">
-            ${!c.is_active ? `<button onclick="activateClass(${c.id})">Aktivieren</button>` : ""}
-            <button class="delete" onclick="deleteClass(${c.id}, '${c.name}')">🗑️ Löschen</button>
-          </div>
-        `;
-        classList.appendChild(li);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${c.name}</td>
+          <td>${c.is_active ? "✅" : ""}</td>
+          <td>
+            <button onclick="activateClass(${c.id})">Aktivieren</button>
+            <button class="danger" onclick="deleteClass(${c.id})">Löschen</button>
+          </td>`;
+        tbody.appendChild(tr);
       });
     }
 
-    // --- Neue Klasse anlegen ---
-    document.getElementById("addClassForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("className").value.trim();
-      if (!name) return alert("Bitte Namen eingeben.");
+    async function activateClass(id) {
+      await fetch(`/api/admin/classes/${id}/activate`, { method: "PATCH" });
+      loadClasses();
+    }
 
-      const res = await fetch("/api/admin/classes", {
+    async function deleteClass(id) {
+      if (!confirm("Klasse wirklich löschen?")) return;
+      await fetch(`/api/admin/classes/${id}`, { method: "DELETE" });
+      loadClasses();
+    }
+
+    document.querySelector("#classForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const name = document.querySelector("#className").value;
+      await fetch("/api/admin/classes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name })
       });
-
-      if (res.ok) {
-        document.getElementById("className").value = "";
-        loadClasses();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Fehler beim Anlegen");
-      }
+      e.target.reset();
+      loadClasses();
     });
 
-    // --- Klasse aktivieren ---
-    async function activateClass(id) {
-      const res = await fetch(`/api/admin/classes/${id}/activate`, {
-        method: "PATCH",
+    async function loadMissions() {
+      const res = await fetch("/api/admin/missions");
+      const data = await res.json();
+      const tbody = document.querySelector("#missionTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${m.image_path ? `<img src="${m.image_path}">` : "-"}</td>
+          <td>${m.title}</td>
+          <td>${m.xp_value}</td>
+          <td>${m.allow_upload ? "✅" : "❌"}</td>
+          <td><button class="danger" onclick="deleteMission(${m.id})">Löschen</button></td>`;
+        tbody.appendChild(tr);
       });
-      if (res.ok) {
-        loadClasses();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Fehler beim Aktivieren");
-      }
     }
 
-    // --- Klasse löschen ---
-    async function deleteClass(id, name) {
-      if (!confirm(`Klasse "${name}" wirklich löschen?`)) return;
-      const res = await fetch(`/api/admin/classes/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        loadClasses();
-      } else {
-        const err = await res.json();
-        alert(err.error || "Fehler beim Löschen");
-      }
+    async function deleteMission(id) {
+      if (!confirm("Mission löschen?")) return;
+      await fetch(`/api/admin/missions/${id}`, { method: "DELETE" });
+      loadMissions();
     }
 
-    // --- Logout ---
-    document.getElementById("logout").addEventListener("click", async () => {
+    document.querySelector("#missionForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      await fetch("/api/admin/missions", { method: "POST", body: formData });
+      e.target.reset();
+      loadMissions();
+    });
+
+    document.querySelector("#logout").addEventListener("click", async () => {
       await fetch("/api/logout", { method: "POST" });
       location.href = "/login.html";
     });
 
-    // Initial laden
     loadClasses();
+    loadMissions();
   </script>
 </body>
 </html>
