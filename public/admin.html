@@ -3,141 +3,186 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Temple of Logic – Admin</title>
+  <title>Temple of Logic – Adminbereich</title>
   <style>
     body {
-      background: #0e0e0e;
-      color: #ddd;
-      font-family: "Segoe UI", sans-serif;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
       margin: 0;
+      padding: 20px;
     }
-    header {
-      background: #181818;
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    h1, h2 { color: #00ffae; }
+    section { margin-bottom: 30px; }
+    input, select, button, textarea {
+      padding: 6px; margin: 4px;
+      border-radius: 5px;
+      border: none;
+    }
+    input, textarea, select {
+      background: #222; color: #eee;
+      width: 200px;
+    }
+    button {
+      background: #00ffae; color: #111;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px;
       border-bottom: 1px solid #333;
     }
-    main { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; }
-    section { background: #1b1b1b; border-radius: 8px; padding: 1rem; border: 1px solid #333; }
-    input, button, select { width: 100%; margin-top: .5rem; padding: .5rem; border: 1px solid #444; border-radius: 5px; background: #222; color: #eee; }
-    button { cursor: pointer; background: #333; }
-    button:hover { background: #555; }
-    table { width: 100%; margin-top: 1rem; border-collapse: collapse; }
-    th, td { border: 1px solid #333; padding: .5rem; }
-    th { background: #222; }
-    img { max-width: 80px; border-radius: 5px; }
-    .danger { background: #a00000; color: white; }
-    .danger:hover { background: #c00000; }
+    img.mission-preview {
+      width: 60px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h2>Temple of Logic – Adminbereich</h2>
-    <button id="logout">Logout</button>
-  </header>
-  <main>
-    <section>
-      <h3>Klassenverwaltung</h3>
-      <form id="classForm">
-        <input type="text" id="className" placeholder="Neue Klasse" required>
-        <button type="submit">Anlegen</button>
-      </form>
-      <table id="classTable"><thead><tr><th>Name</th><th>Aktiv</th><th>Aktionen</th></tr></thead><tbody></tbody></table>
-    </section>
+  <h1>Temple of Logic – Adminbereich</h1>
 
-    <section>
-      <h3>Missionsverwaltung</h3>
-      <form id="missionForm" enctype="multipart/form-data">
-        <input type="text" name="title" placeholder="Titel" required>
-        <input type="number" name="xp_value" placeholder="XP-Wert" required>
-        <label><input type="checkbox" name="allow_upload"> Upload erlaubt?</label>
-        <input type="file" name="image" accept="image/*">
-        <button type="submit">Mission anlegen</button>
-      </form>
-      <table id="missionTable"><thead><tr><th>Bild</th><th>Titel</th><th>XP</th><th>Upload?</th><th>Aktion</th></tr></thead><tbody></tbody></table>
-    </section>
-  </main>
+  <!-- KLASSEN -->
+  <section>
+    <h2>Klassenverwaltung</h2>
+    <form id="classForm">
+      <input type="text" id="className" placeholder="Klassenname" required>
+      <button type="submit">➕ Klasse anlegen</button>
+    </form>
+
+    <table id="classTable">
+      <thead>
+        <tr><th>Name</th><th>Aktiv</th><th>Aktionen</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <!-- MISSIONEN -->
+  <section>
+    <h2>Missionen</h2>
+    <form id="missionForm" enctype="multipart/form-data">
+      <input type="text" id="missionTitle" placeholder="Titel" required>
+      <input type="number" id="missionXP" placeholder="XP" required>
+      <textarea id="missionDesc" placeholder="Beschreibung"></textarea>
+      <label>
+        <input type="checkbox" id="missionUpload">
+        Upload erlauben
+      </label>
+      <input type="file" id="missionImage" accept="image/*">
+      <button type="submit">🚀 Mission anlegen</button>
+    </form>
+
+    <table id="missionTable">
+      <thead>
+        <tr><th>Bild</th><th>Titel</th><th>XP</th><th>Upload</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
 
   <script>
+    const API = location.origin + '/api/admin';
+
+    // --- Klassen laden ---
     async function loadClasses() {
-      const res = await fetch("/api/admin/classes");
-      const data = await res.json();
+      const res = await fetch(`${API}/classes`);
+      if (!res.ok) return console.error("Fehler beim Laden der Klassen");
+      const classes = await res.json();
       const tbody = document.querySelector("#classTable tbody");
       tbody.innerHTML = "";
-      data.forEach(c => {
+      classes.forEach(c => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${c.name}</td>
-          <td>${c.is_active ? "✅" : ""}</td>
+          <td>${c.is_active ? "✅" : "❌"}</td>
           <td>
             <button onclick="activateClass(${c.id})">Aktivieren</button>
-            <button class="danger" onclick="deleteClass(${c.id})">Löschen</button>
-          </td>`;
+            <button onclick="deleteClass(${c.id})">🗑️ Löschen</button>
+          </td>
+        `;
         tbody.appendChild(tr);
       });
     }
 
-    async function activateClass(id) {
-      await fetch(`/api/admin/classes/${id}/activate`, { method: "PATCH" });
-      loadClasses();
-    }
-
-    async function deleteClass(id) {
-      if (!confirm("Klasse wirklich löschen?")) return;
-      await fetch(`/api/admin/classes/${id}`, { method: "DELETE" });
-      loadClasses();
-    }
-
+    // --- Klasse anlegen ---
     document.querySelector("#classForm").addEventListener("submit", async e => {
       e.preventDefault();
-      const name = document.querySelector("#className").value;
-      await fetch("/api/admin/classes", {
+      const name = document.querySelector("#className").value.trim();
+      if (!name) return alert("Name erforderlich");
+      const res = await fetch(`${API}/classes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name })
       });
-      e.target.reset();
-      loadClasses();
+      if (res.ok) {
+        document.querySelector("#className").value = "";
+        loadClasses();
+      } else {
+        alert("Fehler beim Anlegen der Klasse");
+      }
     });
 
+    // --- Klasse aktivieren ---
+    async function activateClass(id) {
+      const res = await fetch(`${API}/classes/${id}/activate`, { method: "PATCH" });
+      if (res.ok) loadClasses();
+    }
+
+    // --- Klasse löschen ---
+    async function deleteClass(id) {
+      if (!confirm("Klasse wirklich löschen?")) return;
+      const res = await fetch(`${API}/classes/${id}`, { method: "DELETE" });
+      if (res.ok) loadClasses();
+      else alert("Fehler beim Löschen");
+    }
+
+    // --- Missionen laden ---
     async function loadMissions() {
-      const res = await fetch("/api/admin/missions");
-      const data = await res.json();
+      const res = await fetch(`${API}/missions`);
+      if (!res.ok) return console.error("Fehler beim Laden der Missionen");
+      const missions = await res.json();
       const tbody = document.querySelector("#missionTable tbody");
       tbody.innerHTML = "";
-      data.forEach(m => {
+      missions.forEach(m => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${m.image_path ? `<img src="${m.image_path}">` : "-"}</td>
+          <td>${m.image_path ? `<img src="${m.image_path}" class="mission-preview">` : "❌"}</td>
           <td>${m.title}</td>
           <td>${m.xp_value}</td>
           <td>${m.allow_upload ? "✅" : "❌"}</td>
-          <td><button class="danger" onclick="deleteMission(${m.id})">Löschen</button></td>`;
+        `;
         tbody.appendChild(tr);
       });
     }
 
-    async function deleteMission(id) {
-      if (!confirm("Mission löschen?")) return;
-      await fetch(`/api/admin/missions/${id}`, { method: "DELETE" });
-      loadMissions();
-    }
-
+    // --- Mission anlegen ---
     document.querySelector("#missionForm").addEventListener("submit", async e => {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      await fetch("/api/admin/missions", { method: "POST", body: formData });
-      e.target.reset();
-      loadMissions();
+      const formData = new FormData();
+      formData.append("title", document.querySelector("#missionTitle").value);
+      formData.append("xp_value", document.querySelector("#missionXP").value);
+      formData.append("description", document.querySelector("#missionDesc").value);
+      formData.append("allow_upload", document.querySelector("#missionUpload").checked);
+      const img = document.querySelector("#missionImage").files[0];
+      if (img) formData.append("image", img);
+
+      const res = await fetch(`${API}/missions`, { method: "POST", body: formData });
+      if (res.ok) {
+        document.querySelector("#missionForm").reset();
+        loadMissions();
+      } else {
+        alert("Fehler beim Anlegen der Mission");
+      }
     });
 
-    document.querySelector("#logout").addEventListener("click", async () => {
-      await fetch("/api/logout", { method: "POST" });
-      location.href = "/login.html";
-    });
-
+    // --- Initial ---
     loadClasses();
     loadMissions();
   </script>
