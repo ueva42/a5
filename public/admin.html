@@ -1,130 +1,272 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Temple of Logic – Adminbereich</title>
+  <meta charset="UTF-8">
+  <title>Temple of Logic – Admin</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #111;
-      color: #eee;
-      margin: 0;
-      padding: 20px;
-    }
-    h1, h2 { color: #00bcd4; }
-    form {
-      background: #1e1e1e;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-    }
-    label { display: block; margin-top: 8px; }
-    input, textarea, select {
-      width: 100%;
-      margin-top: 4px;
-      padding: 8px;
-      background: #222;
-      border: 1px solid #555;
-      border-radius: 4px;
-      color: #fff;
-    }
-    button {
-      margin-top: 10px;
-      background: #00bcd4;
-      border: none;
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    button:hover { background: #0097a7; }
-    .item-list {
-      background: #1a1a1a;
-      padding: 10px;
-      border-radius: 6px;
-    }
-    .item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #222;
-      margin: 6px 0;
-      padding: 8px;
-      border-radius: 4px;
-    }
-    .item img {
-      width: 60px;
-      height: 60px;
-      object-fit: cover;
-      margin-right: 10px;
-      border-radius: 4px;
-    }
-    .item button {
-      background: #e53935;
-      padding: 6px 10px;
-    }
-    #logout {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: #e53935;
-    }
+    body { font-family: system-ui, sans-serif; margin: 20px; }
+    h1, h2, h3 { margin-top: 1.2em; }
+    fieldset { margin-bottom: 1.5em; }
+    label { display: inline-block; margin: 0.25em 0; }
+    table { border-collapse: collapse; width: 100%; margin-top: 0.5em; }
+    th, td { border: 1px solid #ccc; padding: 4px 6px; font-size: 0.9rem; }
+    th { background: #eee; }
+    button { margin: 0.2em 0.1em; }
+    .danger { background: #b00; color: #fff; }
+    .small { font-size: 0.8rem; }
+    .flex { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .column { flex: 1 1 300px; }
+    img.mission-thumb { max-width: 80px; max-height: 80px; display: block; }
+    .uploads-list img { max-width: 120px; max-height: 120px; display: block; }
   </style>
 </head>
 <body>
-  <button id="logout">Logout</button>
   <h1>Temple of Logic – Adminbereich</h1>
+  <button id="logoutBtn">Logout</button>
 
-  <h2>🧑‍🏫 Klassenverwaltung</h2>
-  <form id="classForm">
-    <label for="className">Klassenname:</label>
-    <input type="text" id="className" required />
-    <button type="submit">Klasse anlegen</button>
-  </form>
-  <div id="classList" class="item-list"></div>
+  <h2>Klassen & Missionen</h2>
+  <div class="flex">
+    <!-- KLASSEN -->
+    <div class="column">
+      <fieldset>
+        <legend><strong>Klassenverwaltung</strong></legend>
 
-  <h2>🧩 Missionsverwaltung</h2>
-  <form id="missionForm" enctype="multipart/form-data">
-    <label for="missionTitle">Titel:</label>
-    <input type="text" id="missionTitle" name="title" required />
+        <form id="classForm">
+          <label>
+            Neuer Klassenname:
+            <input type="text" id="className" required />
+          </label>
+          <button type="submit">Klasse anlegen</button>
+        </form>
 
-    <label for="missionDescription">Beschreibung:</label>
-    <textarea id="missionDescription" name="description"></textarea>
+        <h3>Vorhandene Klassen</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Aktiv?</th>
+              <th>Name</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="classTableBody"></tbody>
+        </table>
+      </fieldset>
+    </div>
 
-    <label for="missionXP">XP-Wert:</label>
-    <input type="number" id="missionXP" name="xp_value" required />
+    <!-- MISSIONEN -->
+    <div class="column">
+      <fieldset>
+        <legend><strong>Missionen</strong></legend>
 
-    <label for="allowUpload">
-      <input type="checkbox" id="allowUpload" name="allow_upload" />
-      Datei-Upload für Schüler erlauben
-    </label>
+        <form id="missionForm" enctype="multipart/form-data">
+          <div>
+            <label>
+              Titel:
+              <input type="text" name="title" id="missionTitle" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              Beschreibung:
+              <input type="text" name="description" id="missionDescription" />
+            </label>
+          </div>
+          <div>
+            <label>
+              XP-Wert:
+              <input type="number" name="xp_value" id="missionXp" required />
+            </label>
+          </div>
+          <div>
+            <label>
+              Missionsbild (optional):
+              <input type="file" name="image" id="missionImage" accept="image/*" />
+            </label>
+          </div>
+          <div>
+            <label>
+              <input type="checkbox" name="allow_upload" id="missionAllowUpload" />
+              Schüler:innen dürfen ein Bild zur Mission hochladen
+            </label>
+          </div>
+          <button type="submit">Mission anlegen</button>
+        </form>
 
-    <label for="missionImage">Missionsbild:</label>
-    <input type="file" id="missionImage" name="image" accept="image/*" />
+        <h3>Missionen</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Titel</th>
+              <th>XP</th>
+              <th>Uploads?</th>
+              <th>Bild</th>
+              <th>Aktionen</th>
+            </tr>
+          </thead>
+          <tbody id="missionTableBody"></tbody>
+        </table>
+      </fieldset>
+    </div>
+  </div>
 
-    <button type="submit">Mission speichern</button>
-  </form>
-  <div id="missionList" class="item-list"></div>
+  <h2>Schüler:innen & XP-Vergabe</h2>
+  <fieldset>
+    <legend><strong>Schüler:innen der aktiven Klasse</strong></legend>
+
+    <form id="studentForm">
+      <label>
+        Name:
+        <input type="text" id="studentName" required />
+      </label>
+      <label>
+        Passwort:
+        <input type="text" id="studentPassword" required />
+      </label>
+      <button type="submit">Schüler:in anlegen</button>
+    </form>
+
+    <h3>Schüler:innen</h3>
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="selectAllStudents" /></th>
+          <th>Name</th>
+          <th>XP</th>
+          <th>Highest XP</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="studentTableBody"></tbody>
+    </table>
+
+    <h3>XP-Vergabe</h3>
+    <div>
+      <label>
+        XP-Betrag:
+        <input type="number" id="xpAmount" value="0" />
+      </label>
+    </div>
+    <div>
+      <label>
+        Mission:
+        <select id="xpMissionSelect">
+          <option value="">(keine Mission)</option>
+        </select>
+      </label>
+    </div>
+    <div>
+      <label>
+        Grund / Notiz (optional):
+        <input type="text" id="xpReason" />
+      </label>
+    </div>
+    <div>
+      <label>
+        <input type="checkbox" id="xpApplyToAll" />
+        An alle Schüler:innen der aktiven Klasse vergeben
+      </label>
+    </div>
+    <button id="xpGiveBtn">XP vergeben</button>
+  </fieldset>
+
+  <fieldset>
+    <legend><strong>Mission-Uploads der Schüler:innen</strong></legend>
+    <p class="small">Hier siehst du eingereichte Bilder zu Missionen. Du kannst sie nach Sichtung löschen.</p>
+    <table class="uploads-list">
+      <thead>
+        <tr>
+          <th>Schüler:in</th>
+          <th>Mission</th>
+          <th>Bild</th>
+          <th>Datum</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="uploadsTableBody"></tbody>
+    </table>
+  </fieldset>
 
   <script>
+    // -------------------------------------------------------------------
+    // Session / Logout
+    // -------------------------------------------------------------------
+    async function checkSession() {
+      try {
+        const res = await fetch("/api/session", { credentials: "include" });
+        const data = await res.json();
+        if (!data.authenticated || !data.user || data.user.role !== "admin") {
+          window.location.href = "/login.html";
+        }
+      } catch (err) {
+        console.error("Session-Check Fehler:", err);
+        window.location.href = "/login.html";
+      }
+    }
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      try {
+        await fetch("/api/logout", {
+          method: "POST",
+          credentials: "include"
+        });
+        window.location.href = "/login.html";
+      } catch (err) {
+        console.error("Logout-Fehler:", err);
+      }
+    });
+
+    // -------------------------------------------------------------------
+    // Klassen
+    // -------------------------------------------------------------------
     async function loadClasses() {
       try {
-        const res = await fetch("/api/admin/classes");
-        if (!res.ok) throw new Error("Fehler beim Laden der Klassen");
-        const data = await res.json();
-
-        const list = document.getElementById("classList");
-        list.innerHTML = "";
-        data.forEach((cls) => {
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `
-            <span>${cls.name}</span>
-            <button onclick="deleteClass(${cls.id})">Löschen</button>
-          `;
-          list.appendChild(div);
+        const res = await fetch("/api/admin/classes", {
+          credentials: "include"
         });
+        if (!res.ok) throw new Error("Klassen laden fehlgeschlagen");
+        const classes = await res.json();
+
+        const tbody = document.getElementById("classTableBody");
+        tbody.innerHTML = "";
+        classes.forEach(cls => {
+          const tr = document.createElement("tr");
+
+          const activeTd = document.createElement("td");
+          const radio = document.createElement("input");
+          radio.type = "radio";
+          radio.name = "activeClass";
+          radio.checked = cls.is_active;
+          radio.addEventListener("change", () => setActiveClass(cls.id));
+          activeTd.appendChild(radio);
+
+          const nameTd = document.createElement("td");
+          nameTd.textContent = cls.name;
+
+          const actionsTd = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Löschen";
+          delBtn.className = "danger small";
+          delBtn.addEventListener("click", () => deleteClass(cls.id));
+          actionsTd.appendChild(delBtn);
+
+          tr.appendChild(activeTd);
+          tr.appendChild(nameTd);
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function setActiveClass(id) {
+      try {
+        await fetch("/api/admin/classes/" + id + "/activate", {
+          method: "PATCH",
+          credentials: "include"
+        });
+        await loadClasses();
+        await loadStudents(); // neue aktive Klasse => Schüler neu laden
       } catch (err) {
         console.error(err);
       }
@@ -132,33 +274,111 @@
 
     async function deleteClass(id) {
       if (!confirm("Klasse wirklich löschen?")) return;
-      await fetch("/api/admin/classes/" + id, { method: "DELETE" });
-      loadClasses();
+      try {
+        const res = await fetch("/api/admin/classes/" + id, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Klasse konnte nicht gelöscht werden");
+        }
+        await loadClasses();
+        await loadStudents();
+      } catch (err) {
+        console.error(err);
+      }
     }
 
+    document.getElementById("classForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("className").value.trim();
+      if (!name) return;
+
+      try {
+        const res = await fetch("/api/admin/classes", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Klasse konnte nicht angelegt werden");
+          return;
+        }
+        document.getElementById("className").value = "";
+        await loadClasses();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // -------------------------------------------------------------------
+    // Missionen
+    // -------------------------------------------------------------------
     async function loadMissions() {
       try {
-        const res = await fetch("/api/admin/missions");
-        if (!res.ok) throw new Error("Fehler beim Laden der Missionen");
-        const data = await res.json();
-
-        const list = document.getElementById("missionList");
-        list.innerHTML = "";
-        data.forEach((m) => {
-          const div = document.createElement("div");
-          div.className = "item";
-          div.innerHTML = `
-            <div style="display:flex;align-items:center;">
-              ${m.image_path ? `<img src="${m.image_path}" />` : ""}
-              <div>
-                <strong>${m.title}</strong><br>
-                XP: ${m.xp_value}
-              </div>
-            </div>
-            <button onclick="deleteMission(${m.id})">Löschen</button>
-          `;
-          list.appendChild(div);
+        const res = await fetch("/api/admin/missions", {
+          credentials: "include"
         });
+        if (!res.ok) throw new Error("Missionen laden fehlgeschlagen");
+        const missions = await res.json();
+
+        // Tabelle
+        const tbody = document.getElementById("missionTableBody");
+        tbody.innerHTML = "";
+        missions.forEach(m => {
+          const tr = document.createElement("tr");
+
+          const titleTd = document.createElement("td");
+          titleTd.textContent = m.title;
+
+          const xpTd = document.createElement("td");
+          xpTd.textContent = m.xp_value;
+
+          const allowTd = document.createElement("td");
+          allowTd.textContent = m.allow_upload ? "Ja" : "Nein";
+
+          const imgTd = document.createElement("td");
+          if (m.image_url) {
+            const img = document.createElement("img");
+            img.src = m.image_url;
+            img.className = "mission-thumb";
+            imgTd.appendChild(img);
+          } else {
+            imgTd.textContent = "-";
+          }
+
+          const actionsTd = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Löschen";
+          delBtn.className = "danger small";
+          delBtn.addEventListener("click", () => deleteMission(m.id));
+          actionsTd.appendChild(delBtn);
+
+          tr.appendChild(titleTd);
+          tr.appendChild(xpTd);
+          tr.appendChild(allowTd);
+          tr.appendChild(imgTd);
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        });
+
+        // Select für XP-Vergabe
+        const select = document.getElementById("xpMissionSelect");
+        const current = select.value;
+        select.innerHTML = '<option value="">(keine Mission)</option>';
+        missions.forEach(m => {
+          const opt = document.createElement("option");
+          opt.value = m.id;
+          opt.textContent = `${m.title} (+${m.xp_value} XP)`;
+          select.appendChild(opt);
+        });
+        // alten Wert wiederherstellen falls noch vorhanden
+        if (current) {
+          select.value = current;
+        }
       } catch (err) {
         console.error(err);
       }
@@ -166,39 +386,282 @@
 
     async function deleteMission(id) {
       if (!confirm("Mission wirklich löschen?")) return;
-      await fetch("/api/admin/missions/" + id, { method: "DELETE" });
-      loadMissions();
+      try {
+        const res = await fetch("/api/admin/missions/" + id, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Mission konnte nicht gelöscht werden");
+        }
+        await loadMissions();
+      } catch (err) {
+        console.error(err);
+      }
     }
-
-    document.getElementById("classForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("className").value.trim();
-      if (!name) return;
-      await fetch("/api/admin/classes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      e.target.reset();
-      loadClasses();
-    });
 
     document.getElementById("missionForm").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const formData = new FormData(e.target);
-      const res = await fetch("/api/admin/missions", { method: "POST", body: formData });
-      if (!res.ok) alert("Fehler beim Speichern der Mission");
-      e.target.reset();
-      loadMissions();
+      const form = e.target;
+      const fd = new FormData(form);
+
+      try {
+        const res = await fetch("/api/admin/missions", {
+          method: "POST",
+          credentials: "include",
+          body: fd
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Mission konnte nicht angelegt werden");
+          return;
+        }
+        form.reset();
+        await loadMissions();
+      } catch (err) {
+        console.error(err);
+      }
     });
 
-    document.getElementById("logout").addEventListener("click", async () => {
-      await fetch("/api/logout", { method: "POST" });
-      window.location.href = "/";
+    // -------------------------------------------------------------------
+    // Schüler:innen
+    // -------------------------------------------------------------------
+    async function loadStudents() {
+      try {
+        const res = await fetch("/api/admin/students", {
+          credentials: "include"
+        });
+        if (!res.ok) throw new Error("Schüler laden fehlgeschlagen");
+        const students = await res.json();
+
+        const tbody = document.getElementById("studentTableBody");
+        tbody.innerHTML = "";
+
+        students.forEach(s => {
+          const tr = document.createElement("tr");
+
+          const selTd = document.createElement("td");
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.dataset.id = s.id;
+          selTd.appendChild(cb);
+
+          const nameTd = document.createElement("td");
+          nameTd.textContent = s.name;
+
+          const xpTd = document.createElement("td");
+          xpTd.textContent = s.xp;
+
+          const highestTd = document.createElement("td");
+          highestTd.textContent = s.highest_xp;
+
+          const actionsTd = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Löschen";
+          delBtn.className = "danger small";
+          delBtn.addEventListener("click", () => deleteStudent(s.id));
+          actionsTd.appendChild(delBtn);
+
+          tr.appendChild(selTd);
+          tr.appendChild(nameTd);
+          tr.appendChild(xpTd);
+          tr.appendChild(highestTd);
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function deleteStudent(id) {
+      if (!confirm("Schüler:in wirklich löschen (inkl. XP & Uploads)?")) return;
+      try {
+        const res = await fetch("/api/admin/students/" + id, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Schüler:in konnte nicht gelöscht werden");
+        }
+        await loadStudents();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    document.getElementById("studentForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("studentName").value.trim();
+      const password = document.getElementById("studentPassword").value.trim();
+      if (!name || !password) return;
+
+      try {
+        const res = await fetch("/api/admin/students", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, password })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Schüler:in konnte nicht angelegt werden");
+          return;
+        }
+        document.getElementById("studentName").value = "";
+        document.getElementById("studentPassword").value = "";
+        await loadStudents();
+      } catch (err) {
+        console.error(err);
+      }
     });
 
-    loadClasses();
-    loadMissions();
+    // Select-All Checkbox
+    document.getElementById("selectAllStudents").addEventListener("change", (e) => {
+      const checked = e.target.checked;
+      document
+        .querySelectorAll("#studentTableBody input[type=checkbox]")
+        .forEach(cb => (cb.checked = checked));
+    });
+
+    // -------------------------------------------------------------------
+    // XP-Vergabe
+    // -------------------------------------------------------------------
+    document.getElementById("xpGiveBtn").addEventListener("click", async () => {
+      const amount = parseInt(document.getElementById("xpAmount").value, 10) || 0;
+      const missionId = document.getElementById("xpMissionSelect").value || null;
+      const reason = document.getElementById("xpReason").value || null;
+      const applyToAll = document.getElementById("xpApplyToAll").checked;
+
+      let studentIds = [];
+      if (!applyToAll) {
+        document
+          .querySelectorAll("#studentTableBody input[type=checkbox]:checked")
+          .forEach(cb => studentIds.push(cb.dataset.id));
+      }
+
+      if (!applyToAll && studentIds.length === 0) {
+        alert("Bitte entweder Schüler auswählen oder 'An alle' anhaken.");
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/xp-awards", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentIds,
+            amount,
+            missionId,
+            reason,
+            applyToAll
+          })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || "XP konnten nicht vergeben werden");
+          return;
+        }
+        // nach erfolgreicher Vergabe Schüler- & Uploadliste neu laden
+        await loadStudents();
+        await loadUploads();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    // -------------------------------------------------------------------
+    // Upload-Liste (für Admin)
+    // -------------------------------------------------------------------
+    async function loadUploads() {
+      try {
+        const res = await fetch("/api/admin/mission-uploads", {
+          credentials: "include"
+        });
+        if (!res.ok) throw new Error("Uploads laden fehlgeschlagen");
+        const uploads = await res.json();
+
+        const tbody = document.getElementById("uploadsTableBody");
+        tbody.innerHTML = "";
+        uploads.forEach(u => {
+          const tr = document.createElement("tr");
+
+          const studentTd = document.createElement("td");
+          studentTd.textContent = u.student_name;
+
+          const missionTd = document.createElement("td");
+          missionTd.textContent = u.mission_title;
+
+          const imgTd = document.createElement("td");
+          if (u.file_url) {
+            const img = document.createElement("img");
+            img.src = u.file_url;
+            img.style.maxWidth = "120px";
+            img.style.maxHeight = "120px";
+            imgTd.appendChild(img);
+          } else {
+            imgTd.textContent = "-";
+          }
+
+          const dateTd = document.createElement("td");
+          dateTd.textContent = new Date(u.created_at).toLocaleString();
+
+          const actionsTd = document.createElement("td");
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Löschen";
+          delBtn.className = "danger small";
+          delBtn.addEventListener("click", () => deleteUpload(u.id));
+          actionsTd.appendChild(delBtn);
+
+          tr.appendChild(studentTd);
+          tr.appendChild(missionTd);
+          tr.appendChild(imgTd);
+          tr.appendChild(dateTd);
+          tr.appendChild(actionsTd);
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function deleteUpload(id) {
+      if (!confirm("Upload wirklich löschen?")) return;
+      try {
+        const res = await fetch("/api/admin/mission-uploads/" + id, {
+          method: "DELETE",
+          credentials: "include"
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          alert(data.error || "Upload konnte nicht gelöscht werden");
+          return;
+        }
+        await loadUploads();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // Initialisierung + Polling
+    // -------------------------------------------------------------------
+    (async function init() {
+      await checkSession();
+      await loadClasses();
+      await loadMissions();
+      await loadStudents();
+      await loadUploads();
+
+      // XP/Schüler alle 2s aktualisieren
+      setInterval(loadStudents, 2000);
+
+      // Upload-Liste alle 5s aktualisieren
+      setInterval(loadUploads, 5000);
+    })();
   </script>
 </body>
 </html>
