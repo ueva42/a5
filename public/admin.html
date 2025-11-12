@@ -1,13 +1,182 @@
-<!doctype html>
-<html lang="de"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Admin – Temple of Logic</title></head>
-<body style="font-family:system-ui; background:#0f1115; color:#e7eaf0; margin:20px;">
-  <h1>Adminbereich (Basis)</h1>
-  <p>Du bist eingeloggt. Hier bauen wir später Klassen, Schüler, XP, Missionen.</p>
-  <button onclick="logout()">Logout</button>
-  <script>
-    function logout(){
-      fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login');
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Adminbereich – Temple of Logic</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #101820;
+      color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 100vh;
+      margin: 0;
+      padding: 40px 0;
     }
+
+    h1 {
+      color: #00bcd4;
+      margin-bottom: 10px;
+    }
+
+    #logout {
+      position: absolute;
+      right: 20px;
+      top: 20px;
+      background: #ff5252;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #logout:hover {
+      background: #e53935;
+    }
+
+    .card {
+      background: #1e2a38;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 0 10px rgba(0, 188, 212, 0.2);
+      width: 90%;
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+
+    input, button {
+      padding: 8px;
+      border-radius: 4px;
+      border: none;
+      margin: 4px;
+    }
+
+    input {
+      width: 70%;
+    }
+
+    button {
+      background: #00bcd4;
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0097a7;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    li {
+      background: #243447;
+      margin: 5px 0;
+      padding: 10px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .active {
+      color: #00e676;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Adminbereich</h1>
+  <button id="logout">Logout</button>
+
+  <div class="card">
+    <h2>Neue Klasse anlegen</h2>
+    <form id="addClassForm">
+      <input type="text" id="className" placeholder="Klassenname" required />
+      <button type="submit">➕ Anlegen</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Vorhandene Klassen</h2>
+    <ul id="classList"></ul>
+  </div>
+
+  <script>
+    const classList = document.getElementById("classList");
+
+    // --- Klassen laden ---
+    async function loadClasses() {
+      classList.innerHTML = "<li>Lade Klassen...</li>";
+      const res = await fetch("/api/admin/classes");
+      const data = await res.json();
+
+      classList.innerHTML = "";
+      if (!data.length) {
+        classList.innerHTML = "<li>Keine Klassen vorhanden</li>";
+        return;
+      }
+
+      data.forEach(c => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+          <span class="${c.is_active ? "active" : ""}">
+            ${c.name} ${c.is_active ? "(aktiv)" : ""}
+          </span>
+          ${!c.is_active ? `<button onclick="activateClass(${c.id})">Aktivieren</button>` : ""}
+        `;
+        classList.appendChild(li);
+      });
+    }
+
+    // --- Neue Klasse anlegen ---
+    document.getElementById("addClassForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("className").value.trim();
+      if (!name) return alert("Bitte Namen eingeben.");
+
+      const res = await fetch("/api/admin/classes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+
+      if (res.ok) {
+        document.getElementById("className").value = "";
+        loadClasses();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Anlegen");
+      }
+    });
+
+    // --- Klasse aktivieren ---
+    async function activateClass(id) {
+      const res = await fetch(`/api/admin/classes/${id}/activate`, {
+        method: "PATCH",
+      });
+      if (res.ok) {
+        loadClasses();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Aktivieren");
+      }
+    }
+
+    // --- Logout ---
+    document.getElementById("logout").addEventListener("click", async () => {
+      await fetch("/api/logout", { method: "POST" });
+      location.href = "/login.html";
+    });
+
+    // Initial laden
+    loadClasses();
   </script>
-</body></html>
+</body>
+</html>
