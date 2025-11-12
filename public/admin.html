@@ -89,6 +89,17 @@
       color: #00e676;
       font-weight: bold;
     }
+
+    .actions button {
+      margin-left: 6px;
+    }
+
+    .delete {
+      background: #f44336;
+    }
+    .delete:hover {
+      background: #d32f2f;
+    }
   </style>
 </head>
 <body>
@@ -129,7 +140,10 @@
           <span class="${c.is_active ? "active" : ""}">
             ${c.name} ${c.is_active ? "(aktiv)" : ""}
           </span>
-          ${!c.is_active ? `<button onclick="activateClass(${c.id})">Aktivieren</button>` : ""}
+          <div class="actions">
+            ${!c.is_active ? `<button onclick="activateClass(${c.id})">Aktivieren</button>` : ""}
+            <button class="delete" onclick="deleteClass(${c.id}, '${c.name}')">🗑️ Löschen</button>
+          </div>
         `;
         classList.appendChild(li);
       });
@@ -166,6 +180,18 @@
       } else {
         const err = await res.json();
         alert(err.error || "Fehler beim Aktivieren");
+      }
+    }
+
+    // --- Klasse löschen ---
+    async function deleteClass(id, name) {
+      if (!confirm(`Klasse "${name}" wirklich löschen?`)) return;
+      const res = await fetch(`/api/admin/classes/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        loadClasses();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Fehler beim Löschen");
       }
     }
 
