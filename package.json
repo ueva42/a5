@@ -1,7 +1,7 @@
 {
   "name": "temple-of-logic",
   "version": "1.0.0",
-  "description": "Gamifizierte Web-App für Unterrichtsprojekte (Temple of Logic)",
+  "description": "Gamifizierte Lernplattform Temple of Logic",
   "main": "server.js",
   "type": "module",
   "scripts": {
