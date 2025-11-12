@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Temple of Logic – Login</title>
+  <style>
+    body { background:#0f1115; color:#e7eaf0; font-family:system-ui, Arial; display:grid; place-items:center; height:100svh; margin:0; }
+    .card { width:min(380px, 92vw); background:#171a21; padding:22px; border-radius:14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    h1 { margin:0 0 14px; font-size:1.3rem; }
+    label { display:block; margin:10px 0 4px; font-size:.9rem; color:#9aa4b2;}
+    input, select, button { width:100%; padding:10px 12px; border-radius:10px; border:1px solid #2a2f3a; background:#0f1319; color:#e7eaf0; }
+    button { margin-top:12px; background:#3b82f6; border:none; font-weight:600; cursor:pointer; }
+    button:hover { filter:brightness(1.05); }
+    .msg { margin-top:8px; color:#fca5a5; min-height:1.2em; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Temple of Logic</h1>
+    <label>Rolle</label>
+    <select id="role">
+      <option value="admin">Admin</option>
+      <option value="student">Student</option>
+    </select>
+    <label>Name</label>
+    <input id="name" placeholder="z. B. admin" />
+    <label>Passwort</label>
+    <input id="pw" type="password" placeholder="••••••" />
+    <button id="go">Login</button>
+    <div class="msg" id="msg"></div>
+  </div>
+
+  <script>
+    const role = document.getElementById('role');
+    const nameInput = document.getElementById('name');
+    const pw = document.getElementById('pw');
+    const go = document.getElementById('go');
+    const msg = document.getElementById('msg');
+
+    function submit() {
+      fetch('/api/login', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ name: nameInput.value.trim(), password: pw.value })
+      })
+      .then(r=>r.json())
+      .then(d=>{
+        if(!d.success){ msg.textContent = d.error || 'Login fehlgeschlagen'; return; }
+        location.href = d.role === 'admin' ? '/admin' : '/student';
+      })
+      .catch(()=> msg.textContent='Fehler beim Login');
+    }
+
+    go.addEventListener('click', submit);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Enter') submit(); });
+  </script>
+</body>
+</html>

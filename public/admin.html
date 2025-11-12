@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Admin – Temple of Logic</title></head>
+<body style="font-family:system-ui; background:#0f1115; color:#e7eaf0; margin:20px;">
+  <h1>Adminbereich (Basis)</h1>
+  <p>Du bist eingeloggt. Hier bauen wir später Klassen, Schüler, XP, Missionen.</p>
+  <button onclick="logout()">Logout</button>
+  <script>
+    function logout(){
+      fetch('/api/logout',{method:'POST'}).then(()=>location.href='/login');
+    }
+  </script>
+</body></html>
