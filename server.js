@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// === DATABASE SETUP ===
 const { Pool } = pg;
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -23,21 +24,32 @@ const pool = new Pool({
     : false,
 });
 
-// Middleware
+// === MIDDLEWARE ===
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ FIXED SESSION CONFIG for HTTPS / Railway
+app.set("trust proxy", 1);
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "temple-secret",
     resave: false,
     saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === "production", // HTTPS only on Railway
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
+    }
   })
 );
 
-// Upload Setup
+// === STATIC FILES ===
+app.use(express.static(path.join(__dirname, "public")));
+
+// === UPLOAD CONFIG ===
 const uploadDir = process.env.UPLOAD_DIR
   ? path.resolve(process.env.UPLOAD_DIR)
   : path.join(__dirname, "uploads");
+
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -48,10 +60,9 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
-
-app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(uploadDir));
 
+// === AUTH HELPERS ===
 const ensureAuthenticated = (req, res, next) => {
   if (!req.session.user)
     return res.status(401).json({ error: "Nicht angemeldet" });
@@ -64,8 +75,12 @@ const ensureRole = (role) => (req, res, next) => {
   next();
 };
 
+// === ROUTES ===
+
+// Root redirect
 app.get("/", (_req, res) => res.redirect("/login.html"));
 
+// ---------- LOGIN ----------
 app.post("/api/login", async (req, res) => {
   const { name, password } = req.body;
   try {
@@ -90,20 +105,34 @@ app.post("/api/logout", (req, res) => {
   req.session.destroy(() => res.json({ success: true }));
 });
 
-// === KLASSEN ===
+// === SESSION TEST ===
+app.get("/api/session", (req, res) => {
+  if (!req.session.user) return res.json({ authenticated: false });
+  res.json({ authenticated: true, user: req.session.user });
+});
+
+// ---------- KLASSEN ----------
 app.get("/api/admin/classes", ensureAuthenticated, ensureRole("admin"), async (_req, res) => {
-  const { rows } = await pool.query("SELECT id, name, is_active FROM classes ORDER BY id");
-  res.json(rows);
+  try {
+    const { rows } = await pool.query("SELECT id, name, is_active FROM classes ORDER BY id");
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: "Klassen konnten nicht geladen werden" });
+  }
 });
 
 app.post("/api/admin/classes", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
   const { name } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: "Name erforderlich" });
-  const { rows } = await pool.query(
-    "INSERT INTO classes (name) VALUES ($1) RETURNING id, name, is_active",
-    [name.trim()]
-  );
-  res.status(201).json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      "INSERT INTO classes (name) VALUES ($1) RETURNING id, name, is_active",
+      [name.trim()]
+    );
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: "Klasse konnte nicht angelegt werden" });
+  }
 });
 
 app.patch("/api/admin/classes/:id/activate", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
@@ -118,19 +147,27 @@ app.patch("/api/admin/classes/:id/activate", ensureAuthenticated, ensureRole("ad
 
 app.delete("/api/admin/classes/:id", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
   const { id } = req.params;
-  await pool.query("DELETE FROM classes WHERE id=$1", [id]);
-  res.json({ success: true });
+  try {
+    await pool.query("DELETE FROM classes WHERE id=$1", [id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Klasse konnte nicht gelöscht werden" });
+  }
 });
 
-// === MISSIONEN ===
+// ---------- MISSIONEN ----------
 app.get("/api/admin/missions", ensureAuthenticated, ensureRole("admin"), async (_req, res) => {
-  const { rows } = await pool.query(
-    "SELECT id,title,xp_value,image_path,allow_upload FROM missions ORDER BY id DESC"
-  );
-  res.json(rows.map(m => ({
-    ...m,
-    image_path: m.image_path ? `/uploads/${path.basename(m.image_path)}` : null
-  })));
+  try {
+    const { rows } = await pool.query(
+      "SELECT id,title,xp_value,image_path,allow_upload FROM missions ORDER BY id DESC"
+    );
+    res.json(rows.map(m => ({
+      ...m,
+      image_path: m.image_path ? `/uploads/${path.basename(m.image_path)}` : null
+    })));
+  } catch {
+    res.status(500).json({ error: "Missionen konnten nicht geladen werden" });
+  }
 });
 
 app.post("/api/admin/missions", ensureAuthenticated, ensureRole("admin"), upload.single("image"), async (req, res) => {
@@ -138,26 +175,34 @@ app.post("/api/admin/missions", ensureAuthenticated, ensureRole("admin"), upload
   if (!title?.trim() || !xp_value)
     return res.status(400).json({ error: "Titel und XP erforderlich" });
 
-  const imagePath = req.file ? req.file.path : null;
-  const { rows } = await pool.query(
-    `INSERT INTO missions (title, xp_value, image_path, allow_upload)
-     VALUES ($1,$2,$3,$4)
-     RETURNING id,title,xp_value,image_path,allow_upload`,
-    [title.trim(), Number(xp_value), imagePath, allow_upload === "true" || allow_upload === "on"]
-  );
-  res.status(201).json(rows[0]);
+  try {
+    const imagePath = req.file ? req.file.path : null;
+    const { rows } = await pool.query(
+      `INSERT INTO missions (title, xp_value, image_path, allow_upload)
+       VALUES ($1,$2,$3,$4)
+       RETURNING id,title,xp_value,image_path,allow_upload`,
+      [title.trim(), Number(xp_value), imagePath, allow_upload === "true" || allow_upload === "on"]
+    );
+    res.status(201).json(rows[0]);
+  } catch {
+    res.status(500).json({ error: "Mission konnte nicht angelegt werden" });
+  }
 });
 
 app.delete("/api/admin/missions/:id", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
   const { id } = req.params;
-  const { rows } = await pool.query("SELECT image_path FROM missions WHERE id=$1", [id]);
-  if (rows[0]?.image_path && fs.existsSync(rows[0].image_path))
-    fs.unlinkSync(rows[0].image_path);
-  await pool.query("DELETE FROM missions WHERE id=$1", [id]);
-  res.json({ success: true });
+  try {
+    const { rows } = await pool.query("SELECT image_path FROM missions WHERE id=$1", [id]);
+    if (rows[0]?.image_path && fs.existsSync(rows[0].image_path))
+      fs.unlinkSync(rows[0].image_path);
+    await pool.query("DELETE FROM missions WHERE id=$1", [id]);
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: "Mission konnte nicht gelöscht werden" });
+  }
 });
 
-// === INIT DATABASE ===
+// ---------- DATABASE INIT ----------
 async function ensureDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS classes (
@@ -194,6 +239,7 @@ async function ensureDatabase() {
   }
 }
 
+// ---------- SERVER START ----------
 ensureDatabase().then(() => {
   app.listen(PORT, () => console.log(`🚀 Server läuft auf Port ${PORT}`));
 });
