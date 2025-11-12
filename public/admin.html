@@ -12,6 +12,11 @@
       margin: 0;
       padding: 20px;
     }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
     h1, h2 { color: #00ffae; }
     section { margin-bottom: 30px; }
     input, select, button, textarea {
@@ -46,7 +51,10 @@
   </style>
 </head>
 <body>
-  <h1>Temple of Logic – Adminbereich</h1>
+  <header>
+    <h1>Temple of Logic – Adminbereich</h1>
+    <button id="logoutBtn">🚪 Logout</button>
+  </header>
 
   <!-- KLASSEN -->
   <section>
@@ -81,7 +89,7 @@
 
     <table id="missionTable">
       <thead>
-        <tr><th>Bild</th><th>Titel</th><th>XP</th><th>Upload</th></tr>
+        <tr><th>Bild</th><th>Titel</th><th>XP</th><th>Upload</th><th>Aktionen</th></tr>
       </thead>
       <tbody></tbody>
     </table>
@@ -89,6 +97,12 @@
 
   <script>
     const API = location.origin + '/api/admin';
+
+    // --- Logout ---
+    document.querySelector("#logoutBtn").addEventListener("click", async () => {
+      await fetch("/api/logout", { method: "POST" });
+      window.location.href = "/login.html";
+    });
 
     // --- Klassen laden ---
     async function loadClasses() {
@@ -157,6 +171,7 @@
           <td>${m.title}</td>
           <td>${m.xp_value}</td>
           <td>${m.allow_upload ? "✅" : "❌"}</td>
+          <td><button onclick="deleteMission(${m.id})">🗑️ Löschen</button></td>
         `;
         tbody.appendChild(tr);
       });
@@ -181,6 +196,14 @@
         alert("Fehler beim Anlegen der Mission");
       }
     });
+
+    // --- Mission löschen ---
+    async function deleteMission(id) {
+      if (!confirm("Mission wirklich löschen?")) return;
+      const res = await fetch(`${API}/missions/${id}`, { method: "DELETE" });
+      if (res.ok) loadMissions();
+      else alert("Fehler beim Löschen der Mission");
+    }
 
     // --- Initial ---
     loadClasses();
