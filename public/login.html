@@ -1,67 +1,102 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Login – Temple of Logic</title>
+  <meta charset="UTF-8">
+  <title>Temple of Logic – Login</title>
   <style>
     body {
+      background: #111;
+      color: #fff;
       font-family: Arial, sans-serif;
-      background: #0f2027;
-      background: linear-gradient(to right, #2c5364, #203a43, #0f2027);
-      color: white;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100vh;
+      margin: 0;
+    }
+    .box {
+      background: #222;
+      padding: 30px;
+      border-radius: 10px;
+      width: 300px;
+      text-align: center;
     }
     input {
-      margin: 8px;
-      padding: 8px;
-      border-radius: 4px;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
       border: none;
+      border-radius: 5px;
+      font-size: 16px;
     }
     button {
-      padding: 8px 16px;
-      background: #00bcd4;
-      color: white;
+      margin-top: 20px;
+      width: 100%;
+      padding: 12px;
+      background: #6a00ff;
       border: none;
-      border-radius: 4px;
+      color: white;
+      font-size: 16px;
+      border-radius: 5px;
       cursor: pointer;
     }
     button:hover {
-      background: #0097a7;
+      background: #5800d6;
     }
   </style>
 </head>
 <body>
-  <h2>Login</h2>
-  <form id="loginForm">
-    <input type="text" id="name" placeholder="Name" required />
-    <input type="password" id="password" placeholder="Passwort" required />
-    <button type="submit">Login</button>
-  </form>
 
-  <script>
-    document.getElementById("loginForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const res = await fetch("/api/login", {
+  <div class="box">
+    <h2>Login</h2>
+
+    <input type="text" id="username" placeholder="Benutzername" autocomplete="username">
+    <input type="password" id="password" placeholder="Passwort" autocomplete="current-password">
+
+    <button onclick="login()">Einloggen</button>
+    <p id="msg"></p>
+  </div>
+
+
+<script>
+async function login() {
+    const username = document.getElementById("username").value.trim();
+    const password = document.getElementById("password").value.trim();
+    const msg = document.getElementById("msg");
+
+    msg.style.color = "white";
+    msg.innerText = "Bitte warten...";
+
+    const res = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: document.getElementById("name").value,
-          password: document.getElementById("password").value,
-        }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        if (data.role === "admin") location.href = "/admin.html";
-        else location.href = "/student.html";
-      } else {
-        alert(data.error || "Login fehlgeschlagen");
-      }
+        body: JSON.stringify({ username, password })
     });
-  </script>
+
+    let data;
+    try {
+        data = await res.json();
+    } catch (err) {
+        msg.style.color = "red";
+        msg.innerText = "Serverfehler!";
+        return;
+    }
+
+    if (!data.success) {
+        msg.style.color = "red";
+        msg.innerText = data.error || "Login fehlgeschlagen";
+        return;
+    }
+
+    // Weiterleiten je nach Rolle
+    if (data.role === "admin") {
+        window.location.href = "/admin";
+    } else {
+        window.location.href = "/student";
+    }
+}
+</script>
+
 </body>
 </html>
