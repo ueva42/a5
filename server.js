@@ -1,309 +1,232 @@
-// server.js
+// ================================
+// Server-Grundkonfiguration
+// ================================
 import express from "express";
 import session from "express-session";
-import bcrypt from "bcrypt";
-import dotenv from "dotenv";
 import multer from "multer";
-import fs from "fs";
+import bcrypt from "bcrypt";
+import pkg from "pg";
+const { Pool } = pkg;
 import path from "path";
 import { fileURLToPath } from "url";
-import pg from "pg";
+import fs from "fs";
 
-dotenv.config();
-
+// ================================
+// Pfade & Upload-Verzeichnis
+// ================================
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// ---------------- DATABASE ----------------
-
-const { Pool } = pg;
-const connectionString = process.env.DATABASE_URL;
-const ssl = { rejectUnauthorized: false };
-
-const pool = new Pool({ connectionString, ssl });
-
-// ---------------- UPLOADS ----------------
-
 const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir);
+}
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const clean = file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_");
-    cb(null, Date.now() + "-" + clean);
-  },
+const upload = multer({ dest: uploadDir });
+
+// ================================
+// Datenbankverbindung
+// ================================
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false }
 });
-const upload = multer({ storage });
 
-const publicPath = (filePath) =>
-  filePath ? "/uploads/" + path.basename(filePath) : null;
-
-// ---------------- MIDDLEWARE ----------------
-
+// ================================
+// Express App
+// ================================
+const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Sessions
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret123",
+    secret: process.env.SESSION_SECRET || "devsecret",
     resave: false,
     saveUninitialized: false,
   })
 );
 
+// Static files
 app.use(express.static(path.join(__dirname, "public")));
 app.use("/uploads", express.static(uploadDir));
 
-// ---------------- HELPERS ----------------
-
-function auth(req, res, next) {
-  if (!req.session.user) return res.redirect("/login");
+// ================================
+// Middleware
+// ================================
+function ensureAuthenticated(req, res, next) {
+  if (!req.session.user) return res.status(401).json({ error: "Nicht eingeloggt" });
   next();
 }
 
-function adminOnly(req, res, next) {
-  if (!req.session.user || req.session.user.role !== "admin")
-    return res.redirect("/login");
+function ensureAdmin(req, res, next) {
+  if (!req.session.user || req.session.user.role !== "admin") {
+    return res.status(403).json({ error: "Keine Admin-Rechte" });
+  }
   next();
 }
 
-async function ensureAdmin() {
-  const hash = await bcrypt.hash("admin", 10);
-  await pool.query(
-    `INSERT INTO users (username,password_hash,role)
-     VALUES ('admin',$1,'admin')
-     ON CONFLICT (username) DO NOTHING`,
-    [hash]
-  );
-}
-
-async function activeClass() {
-  const r = await pool.query(
-    "SELECT id FROM classes WHERE is_active = true LIMIT 1"
-  );
-  return r.rows[0]?.id || null;
-}
-
-// ---------------- ROUTES ----------------
-
-// BASIC PAGES
-
-app.get("/", (_req, res) => res.redirect("/login"));
-app.get("/login", (_req, res) =>
-  res.sendFile(path.join(__dirname, "public/login.html"))
-);
-app.get("/admin", adminOnly, (_req, res) =>
-  res.sendFile(path.join(__dirname, "public/admin.html"))
-);
-
+// ================================
 // LOGIN
+// ================================
 
 app.post("/api/login", async (req, res) => {
-  const { username, password } = req.body;
+  try {
+    const { username, password } = req.body;
 
-  const r = await pool.query("SELECT * FROM users WHERE username=$1", [
-    username,
-  ]);
-  if (!r.rows[0]) return res.status(400).json({ error: "Benutzer existiert nicht" });
+    const result = await pool.query(
+      "SELECT * FROM users WHERE username=$1",
+      [username]
+    );
 
-  const user = r.rows[0];
-  const ok = await bcrypt.compare(password, user.password_hash);
-  if (!ok) return res.status(400).json({ error: "Falsches Passwort" });
+    if (result.rows.length === 0)
+      return res.status(400).json({ error: "Benutzer existiert nicht" });
 
-  req.session.user = { id: user.id, username, role: user.role };
-  res.json({ ok: true });
+    const user = result.rows[0];
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) return res.status(400).json({ error: "Falsches Passwort" });
+
+    req.session.user = {
+      id: user.id,
+      username: user.username,
+      role: user.role,
+    };
+
+    res.json({ success: true, role: user.role });
+
+  } catch (err) {
+    console.error("Login Fehler:", err);
+    res.status(500).json({ error: "Login-Fehler" });
+  }
 });
 
-app.post("/api/logout", (req, res) => {
-  req.session.destroy(() => res.json({ ok: true }));
+app.get("/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.redirect("/login.html");
+  });
 });
 
-// ---------------- ADMIN: KLASSEN ----------------
+// ================================
+// ADMIN: Klassen
+// ================================
 
-app.get("/api/admin/classes", adminOnly, async (_req, res) => {
-  const r = await pool.query(
-    "SELECT id,name,is_active FROM classes ORDER BY name"
-  );
+app.get("/api/admin/classes", ensureAdmin, async (_req, res) => {
+  const r = await pool.query("SELECT * FROM classes ORDER BY name");
   res.json(r.rows);
 });
 
-app.post("/api/admin/classes", adminOnly, async (req, res) => {
+app.post("/api/admin/classes", ensureAdmin, async (req, res) => {
   const { name } = req.body;
   const r = await pool.query(
-    "INSERT INTO classes (name,is_active) VALUES ($1,false) RETURNING *",
+    "INSERT INTO classes (name) VALUES ($1) RETURNING *",
     [name]
   );
   res.json(r.rows[0]);
 });
 
-app.patch("/api/admin/classes/:id", adminOnly, async (req, res) => {
-  await pool.query("UPDATE classes SET is_active=false");
-  const r = await pool.query(
-    "UPDATE classes SET is_active=true WHERE id=$1 RETURNING *",
-    [req.params.id]
-  );
-  res.json(r.rows[0]);
-});
-
-app.delete("/api/admin/classes/:id", adminOnly, async (req, res) => {
+app.delete("/api/admin/classes/:id", ensureAdmin, async (req, res) => {
   await pool.query("DELETE FROM classes WHERE id=$1", [req.params.id]);
-  res.json({ ok: true });
+  res.json({ success: true });
 });
 
-// ---------------- ADMIN: SCHÜLER ----------------
+// ================================
+// ADMIN: Missionen
+// ================================
 
-app.get("/api/admin/students", adminOnly, async (_req, res) => {
-  const classId = await activeClass();
-  if (!classId) return res.json([]);
-
-  const r = await pool.query(
-    `SELECT id,username,xp,highest_xp
-     FROM users WHERE role='student' AND class_id=$1
-     ORDER BY username`,
-    [classId]
-  );
+app.get("/api/admin/missions", ensureAdmin, async (_req, res) => {
+  const r = await pool.query("SELECT * FROM missions ORDER BY id DESC");
   res.json(r.rows);
-});
-
-app.post("/api/admin/students", adminOnly, async (req, res) => {
-  const { username, password } = req.body;
-  const classId = await activeClass();
-  if (!classId)
-    return res.status(400).json({ error: "Keine aktive Klasse ausgewählt" });
-
-  const hash = await bcrypt.hash(password, 10);
-  const r = await pool.query(
-    `INSERT INTO users (username,password_hash,role,class_id,xp,highest_xp)
-     VALUES ($1,$2,'student',$3,0,0)
-     RETURNING id,username,xp,highest_xp`,
-    [username, hash, classId]
-  );
-  res.json(r.rows[0]);
-});
-
-app.delete("/api/admin/students/:id", adminOnly, async (req, res) => {
-  await pool.query("DELETE FROM users WHERE id=$1 AND role='student'", [
-    req.params.id,
-  ]);
-  res.json({ ok: true });
-});
-
-// ---------------- ADMIN: MISSIONEN ----------------
-
-app.get("/api/admin/missions", adminOnly, async (_req, res) => {
-  const r = await pool.query(
-    `SELECT id,title,description,xp_value,image_path,allow_upload
-     FROM missions ORDER BY created_at DESC`
-  );
-
-  res.json(
-    r.rows.map((m) => ({
-      ...m,
-      image_url: publicPath(m.image_path),
-    }))
-  );
 });
 
 app.post(
   "/api/admin/missions",
-  adminOnly,
+  ensureAdmin,
   upload.single("image"),
   async (req, res) => {
-    const { title, description, xp_value, allow_upload } = req.body;
+    try {
+      const { title, xp } = req.body;
+      const imagePath = req.file ? "/uploads/" + req.file.filename : null;
 
-    const r = await pool.query(
-      `INSERT INTO missions (title,description,xp_value,image_path,allow_upload)
-       VALUES ($1,$2,$3,$4,$5)
-       RETURNING *`,
-      [
-        title,
-        description,
-        Number(xp_value),
-        req.file ? req.file.path : null,
-        allow_upload === "on" ? true : false,
-      ]
-    );
+      const r = await pool.query(
+        "INSERT INTO missions (title, xp, image_path) VALUES ($1,$2,$3) RETURNING *",
+        [title, xp, imagePath]
+      );
 
-    const m = r.rows[0];
-    m.image_url = publicPath(m.image_path);
-    res.json(m);
+      res.json(r.rows[0]);
+    } catch (err) {
+      console.error("Mission Fehler:", err);
+      res.status(500).json({ error: "Mission konnte nicht angelegt werden" });
+    }
   }
 );
 
-app.delete("/api/admin/missions/:id", adminOnly, async (req, res) => {
-  const r = await pool.query(
-    "SELECT file_path FROM student_mission_uploads WHERE mission_id=$1",
-    [req.params.id]
-  );
-  for (const u of r.rows) {
-    if (u.file_path && fs.existsSync(u.file_path)) fs.unlinkSync(u.file_path);
-  }
-
+app.delete("/api/admin/missions/:id", ensureAdmin, async (req, res) => {
   await pool.query("DELETE FROM missions WHERE id=$1", [req.params.id]);
-  res.json({ ok: true });
+  res.json({ success: true });
 });
 
-// ---------------- ADMIN: XP VERGABE ----------------
+// ================================
+// ADMIN: Schüler
+// ================================
 
-app.post("/api/admin/xp", adminOnly, async (req, res) => {
-  const { studentIds, xp, missionId, all } = req.body;
+app.get("/api/admin/students/:classId", ensureAdmin, async (req, res) => {
+  const r = await pool.query(
+    "SELECT * FROM users WHERE role='student' AND class_id=$1 ORDER BY username",
+    [req.params.classId]
+  );
+  res.json(r.rows);
+});
 
-  let ids = studentIds;
-  if (all) {
-    const classId = await activeClass();
+app.post("/api/admin/students", ensureAdmin, async (req, res) => {
+  try {
+    const { username, password, class_id } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+
     const r = await pool.query(
-      "SELECT id FROM users WHERE role='student' AND class_id=$1",
-      [classId]
+      "INSERT INTO users (username, password_hash, role, class_id) VALUES ($1,$2,'student',$3) RETURNING *",
+      [username, hash, class_id]
     );
-    ids = r.rows.map((x) => x.id);
+
+    res.json(r.rows[0]);
+  } catch (err) {
+    console.error("Schüler anlegen Fehler:", err);
+    res.status(500).json({ error: "Fehler beim Anlegen" });
   }
-
-  let addXp = Number(xp) || 0;
-
-  if (missionId) {
-    const m = await pool.query("SELECT xp_value FROM missions WHERE id=$1", [
-      missionId,
-    ]);
-    addXp += Number(m.rows[0].xp_value);
-  }
-
-  for (const id of ids) {
-    const u = await pool.query(
-      "SELECT xp,highest_xp FROM users WHERE id=$1",
-      [id]
-    );
-    const cur = Number(u.rows[0].xp);
-    const high = Number(u.rows[0].highest_xp);
-    const newXp = cur + addXp;
-    const newHigh = Math.max(high, newXp);
-
-    await pool.query(
-      "UPDATE users SET xp=$1,highest_xp=$2 WHERE id=$3",
-      [newXp, newHigh, id]
-    );
-
-    await pool.query(
-      `INSERT INTO xp_transactions (student_id,amount,reason,mission_id,awarded_by)
-       VALUES ($1,$2,$3,$4,$5)`,
-      [
-        id,
-        addXp,
-        missionId ? "Mission" : "Manuell",
-        missionId || null,
-        req.session.user.id,
-      ]
-    );
-  }
-
-  res.json({ ok: true });
 });
 
-// ========================= START =========================
-
-ensureAdmin().then(() => {
-  app.listen(PORT, () => console.log("Server läuft auf Port", PORT));
+app.delete("/api/admin/students/:id", ensureAdmin, async (req, res) => {
+  await pool.query("DELETE FROM users WHERE id=$1", [req.params.id]);
+  res.json({ success: true });
 });
+
+// ================================
+// XP Vergabe
+// ================================
+app.post("/api/admin/xp/give", ensureAdmin, async (req, res) => {
+  try {
+    const { studentIds, amount } = req.body;
+
+    for (const id of studentIds) {
+      await pool.query("UPDATE users SET xp=xp+$1 WHERE id=$2", [amount, id]);
+    }
+    res.json({ success: true });
+  } catch (err) {
+    console.error("XP Fehler:", err);
+    res.status(500).json({ error: "XP konnte nicht vergeben werden" });
+  }
+});
+
+// ================================
+// Fallback: Admin-Seite
+// ================================
+app.get("/admin", ensureAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "admin.html"));
+});
+
+// ================================
+// Server Start
+// ================================
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => console.log("Server läuft auf Port " + PORT));
