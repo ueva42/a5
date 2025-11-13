@@ -1,194 +1,131 @@
+// =========================
+// Temple of Logic - Server
+// =========================
+
 import express from "express";
 import session from "express-session";
-import multer from "multer";
-import path from "path";
-import fs from "fs";
-import pkg from "pg";
+import pg from "pg";
 import bcrypt from "bcrypt";
+import path from "path";
 import dotenv from "dotenv";
+import multer from "multer";
 
 dotenv.config();
 
-const { Pool } = pkg;
-
-// ---------- DB SETUP ----------
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// ---------- APP SETUP ----------
 const app = express();
-const PORT = process.env.PORT || 3000;
+const __dirname = process.cwd();
 
+// ---------- MIDDLEWARE ----------
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
 
-// ---------- SESSIONS ----------
+// ---------- SESSION ----------
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "dev-secret",
+    secret: process.env.SESSION_SECRET || "supersecret123",
     resave: false,
     saveUninitialized: false,
+    cookie: { maxAge: 1000 * 60 * 60 * 24 }, // 1 Tag
   })
 );
 
-// ---------- STATIC FILES ----------
-app.use(express.static("public"));
-
-// ---------- UPLOADS ----------
-const uploadDir = process.env.UPLOAD_DIR || "/app/uploads";
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_, __, cb) => cb(null, uploadDir),
-  filename: (_, file, cb) => {
-    const unique = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  },
+// ---------- DATABASE ----------
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
 });
 
-const upload = multer({ storage });
-
-// ---------- AUTH MIDDLEWARE ----------
+// ---------- AUTH HELPERS ----------
 function ensureAuthenticated(req, res, next) {
-  if (!req.session.user) return res.status(401).json({ error: "Nicht eingeloggt" });
-  next();
+  if (req.session.userId) return next();
+  return res.status(401).json({ error: "Nicht eingeloggt" });
 }
 
 function ensureRole(role) {
   return (req, res, next) => {
-    if (!req.session.user || req.session.user.role !== role)
-      return res.status(403).json({ error: "Keine Berechtigung" });
-    next();
+    if (req.session.role === role) return next();
+    return res.status(403).json({ error: "Keine Berechtigung" });
   };
 }
+
+// ---------- UPLOADS (Schüler Avatar / Mission Bild später) ----------
+const uploadFolder = path.join(__dirname, "uploads");
+import fs from "fs";
+
+if (!fs.existsSync(uploadFolder)) fs.mkdirSync(uploadFolder);
+
+const storage = multer.diskStorage({
+  destination: (_, __, cb) => cb(null, uploadFolder),
+  filename: (_, file, cb) =>
+    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "")),
+});
+
+const upload = multer({ storage });
+
+// ==============================
+//           ROUTES
+// ==============================
 
 // ---------- LOGIN ----------
 app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
 
-  if (!username || !password)
-    return res.status(400).json({ error: "Benutzername & Passwort erforderlich" });
-
   try {
     const result = await pool.query(
-      "SELECT * FROM users WHERE username = $1",
+      "SELECT * FROM users WHERE username = $1 LIMIT 1",
       [username]
     );
 
     if (result.rows.length === 0)
-      return res.status(400).json({ error: "User existiert nicht" });
+      return res.status(400).json({ error: "Nutzer nicht gefunden" });
 
     const user = result.rows[0];
-    const ok = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
 
-    if (!ok) return res.status(401).json({ error: "Passwort falsch" });
+    if (!isMatch)
+      return res.status(400).json({ error: "Passwort falsch" });
 
-    req.session.user = {
-      id: user.id,
-      username: user.username,
-      role: user.role,
-    };
+    req.session.userId = user.id;
+    req.session.role = user.role;
 
-    res.json({ success: true, role: user.role });
+    return res.json({ success: true, role: user.role });
   } catch (err) {
-    console.error("LOGIN ERROR:", err);
+    console.error("Login-Fehler:", err);
     res.status(500).json({ error: "Serverfehler" });
   }
 });
 
 // ---------- LOGOUT ----------
-app.post("/api/logout", (req, res) => {
-  req.session.destroy(() => res.json({ success: true }));
-});
-
-// *************************************************
-// *************** KLASSEN CRUD *********************
-// *************************************************
-app.get("/api/admin/classes", ensureAuthenticated, ensureRole("admin"), async (_req, res) => {
-  try {
-    const r = await pool.query("SELECT * FROM classes ORDER BY id ASC");
-    res.json(r.rows);
-  } catch (err) {
-    console.error("Load classes error:", err);
-    res.status(500).json({ error: "Fehler beim Laden" });
-  }
-});
-
-app.post("/api/admin/classes", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
-  const { name } = req.body;
-  if (!name) return res.status(400).json({ error: "Name fehlt" });
-
-  try {
-    await pool.query("INSERT INTO classes (class_name) VALUES ($1)", [name]);
+app.get("/api/logout", (req, res) => {
+  req.session.destroy(() => {
     res.json({ success: true });
-  } catch (err) {
-    console.error("Create class error:", err);
-    res.status(500).json({ error: "Fehler beim Erstellen" });
-  }
+  });
 });
 
-app.delete("/api/admin/classes/:id", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
-  try {
-    await pool.query("DELETE FROM classes WHERE id = $1", [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Delete class error:", err);
-    res.status(500).json({ error: "Fehler beim Löschen" });
-  }
+// ---------- FRONTEND ROUTES ----------
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// *************************************************
-// *************** MISSIONEN CRUD *******************
-// *************************************************
-app.get("/api/admin/missions", ensureAuthenticated, ensureRole("admin"), async (_req, res) => {
-  try {
-    const r = await pool.query("SELECT * FROM missions ORDER BY id ASC");
-    res.json(r.rows);
-  } catch (err) {
-    console.error("Load missions error:", err);
-    res.status(500).json({ error: "Fehler beim Laden" });
-  }
-});
-
-app.post(
-  "/api/admin/missions",
+app.get(
+  "/admin",
   ensureAuthenticated,
   ensureRole("admin"),
-  upload.single("image"),
-  async (req, res) => {
-
-    const { name, xp } = req.body;
-    const imagePath = req.file ? req.file.filename : null;
-
-    if (!name || !xp) return res.status(400).json({ error: "Name & XP erforderlich" });
-
-    try {
-      await pool.query(
-        "INSERT INTO missions (name, xp, image_path) VALUES ($1, $2, $3)",
-        [name, xp, imagePath]
-      );
-      res.json({ success: true });
-    } catch (err) {
-      console.error("Create mission error:", err);
-      res.status(500).json({ error: "Fehler beim Erstellen" });
-    }
+  (_req, res) => {
+    res.sendFile(path.join(__dirname, "public", "admin.html"));
   }
 );
 
-app.delete("/api/admin/missions/:id", ensureAuthenticated, ensureRole("admin"), async (req, res) => {
-  try {
-    await pool.query("DELETE FROM missions WHERE id = $1", [req.params.id]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Delete mission error:", err);
-    res.status(500).json({ error: "Fehler beim Löschen" });
-  }
+// ---------- TEST ENDPOINT (optional) ----------
+app.get("/api/ping", (_req, res) => {
+  res.json({ pong: true });
 });
 
-// ---------- SERVER START ----------
-app.listen(PORT, () => console.log("Server läuft auf Port", PORT));
+// ==============================
+//           SERVER START
+// ==============================
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("🚀 Server läuft auf Port:", PORT);
+});
