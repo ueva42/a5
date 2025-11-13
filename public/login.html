@@ -2,100 +2,42 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <title>Temple of Logic – Login</title>
-  <style>
-    body {
-      background: #111;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-    }
-    .box {
-      background: #222;
-      padding: 30px;
-      border-radius: 10px;
-      width: 300px;
-      text-align: center;
-    }
-    input {
-      width: 100%;
-      padding: 12px;
-      margin-top: 10px;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 12px;
-      background: #6a00ff;
-      border: none;
-      color: white;
-      font-size: 16px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #5800d6;
-    }
-  </style>
+  <title>Login – Temple of Logic</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-  <div class="box">
-    <h2>Login</h2>
+<div class="box">
+  <h2>Login</h2>
 
-    <input type="text" id="username" placeholder="Benutzername" autocomplete="username">
-    <input type="password" id="password" placeholder="Passwort" autocomplete="current-password">
+  <input id="username" placeholder="Benutzername">
+  <input id="password" type="password" placeholder="Passwort">
 
-    <button onclick="login()">Einloggen</button>
-    <p id="msg"></p>
-  </div>
+  <button id="login-btn">Einloggen</button>
 
+  <div id="msg"></div>
+</div>
 
 <script>
-async function login() {
-    const username = document.getElementById("username").value.trim();
-    const password = document.getElementById("password").value.trim();
-    const msg = document.getElementById("msg");
+document.getElementById("login-btn").onclick = async () => {
+  const username = username.value.trim();
+  const password = password.value.trim();
 
-    msg.style.color = "white";
-    msg.innerText = "Bitte warten...";
+  const res = await fetch("/api/login", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ username, password })
+  });
 
-    const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password })
-    });
+  const data = await res.json();
 
-    let data;
-    try {
-        data = await res.json();
-    } catch (err) {
-        msg.style.color = "red";
-        msg.innerText = "Serverfehler!";
-        return;
-    }
+  if (!res.ok) {
+    msg.textContent = data.error || "Fehler";
+    return;
+  }
 
-    if (!data.success) {
-        msg.style.color = "red";
-        msg.innerText = data.error || "Login fehlgeschlagen";
-        return;
-    }
-
-    // Weiterleiten je nach Rolle
-    if (data.role === "admin") {
-        window.location.href = "/admin";
-    } else {
-        window.location.href = "/student";
-    }
-}
+  window.location.href = "/admin";
+};
 </script>
 
 </body>

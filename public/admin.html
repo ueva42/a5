@@ -1,1212 +1,177 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>Temple of Logic – Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --bg: #050816;
-      --bg-dark: #02040b;
-      --panel: #111827;
-      --panel-soft: #1f2933;
-      --accent: #f97316;
-      --accent-soft: rgba(249, 115, 22, 0.15);
-      --accent-2: #38bdf8;
-      --text: #e5e7eb;
-      --text-soft: #9ca3af;
-      --danger: #ef4444;
-      --border: #374151;
-      --radius-lg: 14px;
-      --radius-md: 10px;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: radial-gradient(circle at top, #111827 0, #020617 45%, #000 100%);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    header {
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid rgba(148, 163, 184, 0.3);
-      background: linear-gradient(90deg, #020617, #020617 40%, #0b1120 100%);
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-
-    .title-block {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .logo-orb {
-      width: 36px;
-      height: 36px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      background:
-        radial-gradient(circle at 30% 20%, #38bdf8 0, transparent 55%),
-        radial-gradient(circle at 75% 80%, #f97316 0, transparent 55%),
-        radial-gradient(circle at 50% 50%, #020617 0, #020617 45%, #0b1120 100%);
-      box-shadow:
-        0 0 40px rgba(56, 189, 248, 0.45),
-        0 0 80px rgba(249, 115, 22, 0.2);
-    }
-
-    h1 {
-      font-size: 1.3rem;
-      margin: 0;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #e5e7eb;
-    }
-
-    .subtitle {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .pill {
-      font-size: 0.75rem;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.4);
-      color: var(--text-soft);
-    }
-
-    button {
-      cursor: pointer;
-      border: none;
-      border-radius: 999px;
-      padding: 8px 16px;
-      font-size: 0.85rem;
-      font-weight: 500;
-      background: linear-gradient(135deg, var(--accent), #ea580c);
-      color: #0b1120;
-      box-shadow: 0 10px 25px rgba(248, 118, 40, 0.4);
-      transition:
-        transform 0.1s ease,
-        box-shadow 0.1s ease,
-        background 0.15s ease,
-        opacity 0.15s ease;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 16px 35px rgba(248, 118, 40, 0.6);
-    }
-
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 8px 18px rgba(248, 118, 40, 0.4);
-      opacity: 0.9;
-    }
-
-    button.btn-secondary {
-      background: linear-gradient(135deg, #1f2937, #020617);
-      color: #e5e7eb;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.7);
-      border: 1px solid rgba(148, 163, 184, 0.35);
-    }
-
-    button.btn-danger {
-      background: linear-gradient(135deg, #b91c1c, #7f1d1d);
-      color: #fee2e2;
-      box-shadow: 0 10px 26px rgba(185, 28, 28, 0.5);
-    }
-
-    main {
-      width: 100%;
-      max-width: 1100px;
-      margin: 16px auto 32px;
-      padding: 0 16px 32px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-      gap: 18px;
-    }
-
-    @media (max-width: 900px) {
-      .grid {
-        grid-template-columns: minmax(0, 1fr);
-      }
-    }
-
-    section {
-      background: radial-gradient(circle at top, #0b1120 0, #020617 45%);
-      border-radius: var(--radius-lg);
-      padding: 16px 18px 18px;
-      border: 1px solid rgba(148, 163, 184, 0.25);
-      box-shadow:
-        0 22px 45px rgba(15, 23, 42, 0.9),
-        0 0 0 1px rgba(15, 23, 42, 0.8);
-      position: relative;
-      overflow: hidden;
-    }
-
-    section::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(circle at 10% -10%, rgba(56, 189, 248, 0.12), transparent 55%),
-        radial-gradient(circle at 110% 110%, rgba(248, 113, 113, 0.12), transparent 55%);
-      opacity: 0.8;
-      pointer-events: none;
-      mix-blend-mode: screen;
-    }
-
-    section > * {
-      position: relative;
-      z-index: 1;
-    }
-
-    h2 {
-      margin: 0 0 10px;
-      font-size: 1rem;
-      text-transform: uppercase;
-      letter-spacing: 0.17em;
-      color: #e5e7eb;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    h2 span.label {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.8);
-      color: var(--accent-2);
-      border: 1px solid rgba(56, 189, 248, 0.5);
-    }
-
-    .section-subtitle {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-      margin-bottom: 10px;
-    }
-
-    .section-header-line {
-      height: 1px;
-      width: 100%;
-      margin: 6px 0 10px;
-      background:
-        linear-gradient(
-          90deg,
-          rgba(148, 163, 184, 0.15),
-          rgba(56, 189, 248, 0.6),
-          rgba(248, 113, 113, 0.4),
-          rgba(148, 163, 184, 0.15)
-        );
-      opacity: 0.7;
-    }
-
-    .form-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 10px;
-      align-items: center;
-    }
-
-    label {
-      font-size: 0.8rem;
-      color: var(--text-soft);
-    }
-
-    input[type="text"],
-    input[type="password"],
-    input[type="number"],
-    select {
-      padding: 7px 9px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.45);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      font-size: 0.82rem;
-      min-width: 0;
-      outline: none;
-      transition:
-        border-color 0.15s ease,
-        box-shadow 0.15s ease,
-        background 0.15s ease;
-    }
-
-    input[type="text"]:focus,
-    input[type="password"]:focus,
-    input[type="number"]:focus,
-    select:focus {
-      border-color: var(--accent-2);
-      box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
-      background: #020617;
-    }
-
-    input[type="number"] {
-      width: 80px;
-    }
-
-    input[type="file"] {
-      font-size: 0.75rem;
-      color: var(--text-soft);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 6px;
-      font-size: 0.8rem;
-    }
-
-    th,
-    td {
-      padding: 6px 8px;
-      text-align: left;
-      border-bottom: 1px solid rgba(30, 41, 59, 0.9);
-    }
-
-    th {
-      font-weight: 500;
-      color: var(--text-soft);
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    tbody tr:nth-child(odd) {
-      background: rgba(15, 23, 42, 0.7);
-    }
-
-    tbody tr:nth-child(even) {
-      background: rgba(15, 23, 42, 0.45);
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.7rem;
-      background: rgba(34, 197, 94, 0.18);
-      color: #bbf7d0;
-      border: 1px solid rgba(22, 163, 74, 0.7);
-    }
-
-    .badge-soft {
-      background: rgba(148, 163, 184, 0.15);
-      color: var(--text-soft);
-      border: 1px solid rgba(148, 163, 184, 0.35);
-    }
-
-    .mission-thumb {
-      width: 48px;
-      height: 32px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid rgba(148, 163, 184, 0.4);
-    }
-
-    .xp-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 7px;
-      border-radius: 999px;
-      background: rgba(248, 113, 113, 0.16);
-      border: 1px solid rgba(248, 113, 113, 0.5);
-      font-size: 0.7rem;
-      color: #fecaca;
-      white-space: nowrap;
-    }
-
-    .xp-pill span {
-      font-weight: 600;
-      color: #fca5a5;
-    }
-
-    .xp-row {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-
-    .hint {
-      font-size: 0.72rem;
-      color: var(--text-soft);
-      margin-top: 2px;
-    }
-
-    .error-banner {
-      margin-top: 6px;
-      padding: 6px 8px;
-      border-radius: 8px;
-      background: rgba(248, 113, 113, 0.18);
-      border: 1px solid rgba(248, 113, 113, 0.4);
-      color: #fecaca;
-      font-size: 0.75rem;
-    }
-
-    .success-banner {
-      margin-top: 6px;
-      padding: 6px 8px;
-      border-radius: 8px;
-      background: rgba(34, 197, 94, 0.14);
-      border: 1px solid rgba(34, 197, 94, 0.5);
-      color: #bbf7d0;
-      font-size: 0.75rem;
-    }
-
-    .section-footer {
-      margin-top: 8px;
-      display: flex;
-      justify-content: flex-end;
-      font-size: 0.7rem;
-      color: var(--text-soft);
-      opacity: 0.8;
-    }
-
-    .checkbox-cell {
-      width: 28px;
-      text-align: center;
-    }
-
-    .btn-sm {
-      padding: 4px 10px;
-      font-size: 0.7rem;
-      border-radius: 999px;
-    }
-
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid rgba(148, 163, 184, 0.5);
-      color: var(--text-soft);
-      box-shadow: none;
-    }
-
-    .btn-ghost:hover {
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text);
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.9);
-    }
-
-    .stack {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Admin – Temple of Logic</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-  <header>
-    <div class="title-block">
-      <div class="logo-orb"></div>
-      <div>
-        <h1>TEMPLE OF LOGIC</h1>
-        <div class="subtitle">Admin-Kontrollraum</div>
-      </div>
-    </div>
-    <div class="header-right">
-      <div class="pill" id="activeClassPill">Aktive Klasse: –</div>
-      <button id="logoutBtn" class="btn-secondary">Logout</button>
-    </div>
-  </header>
 
-  <main>
-    <div class="grid">
-      <!-- KLASSEN & SCHÜLER -->
-      <div class="stack">
+<button id="logout">Logout</button>
 
-        <!-- KLASSEN -->
-        <section id="classesSection">
-          <h2>Klassen <span class="label">Structure</span></h2>
-          <div class="section-subtitle">
-            Lege Klassen an, wähle eine aktive Klasse und bereinige alte Einträge.
-          </div>
-          <div class="section-header-line"></div>
+<h1>Klassen</h1>
+<input id="class-name" placeholder="Neue Klasse">
+<button id="add-class">Hinzufügen</button>
+<div id="classes"></div>
 
-          <div class="form-row">
-            <label for="className">Neue Klasse:</label>
-            <input id="className" type="text" placeholder="z. B. 7a" />
-            <button id="addClassBtn">Klasse anlegen</button>
-          </div>
+<h1>Schüler</h1>
+<input id="student-name" placeholder="Benutzername">
+<input id="student-pass" placeholder="Passwort">
+<button id="add-student">Hinzufügen</button>
+<div id="students"></div>
 
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Klassenname</th>
-                <th>Status</th>
-                <th style="text-align:right;">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody id="classTableBody">
-              <!-- Klassen werden hier eingefügt -->
-            </tbody>
-          </table>
+<h1>Missionen</h1>
+<form id="mission-form" enctype="multipart/form-data">
+  <input name="title" placeholder="Titel">
+  <input name="xp_value" placeholder="XP">
+  <input name="description" placeholder="Beschreibung">
+  <label><input type="checkbox" name="allow_upload"> Upload erlaubt</label>
+  <input type="file" name="image">
+  <button>Speichern</button>
+</form>
+<div id="missions"></div>
 
-          <div id="classError" class="error-banner" style="display:none;"></div>
-          <div class="section-footer">
-            Klassenänderungen wirken sich sofort auf die XP-Vergabe aus.
-          </div>
-        </section>
+<h1>XP Vergabe</h1>
+<input id="xp" placeholder="XP">
+<select id="mission-select"></select>
+<button id="xp-selected">An ausgewählte</button>
+<button id="xp-all">An alle</button>
 
-        <!-- SCHÜLER -->
-        <section id="studentsSection">
-          <h2>Schüler:innen <span class="label">Adventurers</span></h2>
-          <div class="section-subtitle">
-            Lege Spieler-Accounts an und lösche alte Einträge.
-          </div>
-          <div class="section-header-line"></div>
+<script>
+async function api(url, opts) {
+  const res = await fetch(url, {
+    credentials: "same-origin",
+    ...opts
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
 
-          <div class="form-row">
-            <label for="studentName">Name:</label>
-            <input id="studentName" type="text" placeholder="z. B. Max" />
-            <label for="studentPassword">Passwort:</label>
-            <input
-              id="studentPassword"
-              type="password"
-              placeholder="Startpasswort"
-            />
-            <button id="addStudentBtn">Spieler anlegen</button>
-          </div>
+document.getElementById("logout").onclick = async () => {
+  await api("/api/logout", { method: "POST" });
+  location.href = "/login";
+};
 
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>XP</th>
-                <th>Highest XP</th>
-                <th style="text-align:right;">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody id="studentTableBody"></tbody>
-          </table>
+async function loadClasses() {
+  const c = await api("/api/admin/classes");
+  const box = document.getElementById("classes");
+  box.innerHTML = "";
+  c.forEach(k => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      ${k.is_active ? "(aktiv)" : ""}
+      ${k.name}
+      <button data-id="${k.id}" class="act">Aktivieren</button>
+      <button data-id="${k.id}" class="del">Löschen</button>
+    `;
+    box.appendChild(div);
 
-          <div id="studentError" class="error-banner" style="display:none;"></div>
-          <div class="section-footer">
-            Tipp: Nutzernamen sollten eindeutig sein (&quot;max7a&quot; statt nur &quot;Max&quot;).
-          </div>
-        </section>
-      </div>
+    div.querySelector(".act").onclick = () =>
+      api("/api/admin/classes/" + k.id, { method: "PATCH" }).then(loadClasses);
 
-      <!-- XP & MISSIONEN -->
-      <div class="stack">
-        <!-- XP VERGABE -->
-        <section id="xpSection">
-          <h2>XP-Vergabe <span class="label">Energy Flow</span></h2>
-          <div class="section-subtitle">
-            Vergib XP an ausgewählte oder alle Spieler – manuell oder über Missionen.
-          </div>
-          <div class="section-header-line"></div>
+    div.querySelector(".del").onclick = () =>
+      api("/api/admin/classes/" + k.id, { method: "DELETE" }).then(loadClasses);
+  });
+}
 
-          <!-- Steuerleiste -->
-          <div class="form-row">
-            <label for="xpAmount">Manuelle XP:</label>
-            <input id="xpAmount" type="number" value="10" min="1" />
+document.getElementById("add-class").onclick = () => {
+  api("/api/admin/classes", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ name: class-name.value })
+  }).then(loadClasses);
+};
 
-            <button id="xpSelectedBtn" class="btn-secondary btn-sm">
-              An ausgewählte
-            </button>
-            <button id="xpAllBtn" class="btn-secondary btn-sm">
-              An alle
-            </button>
-          </div>
+async function loadStudents() {
+  const s = await api("/api/admin/students");
+  const box = document.getElementById("students");
+  box.innerHTML = "";
+  s.forEach(st => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <input type="checkbox" class="chk" value="${st.id}">
+      ${st.username} (${st.xp} XP)
+      <button data-id="${st.id}" class="del">Löschen</button>
+    `;
+    box.appendChild(div);
+    div.querySelector(".del").onclick = () =>
+      api("/api/admin/students/" + st.id, { method: "DELETE" }).then(loadStudents);
+  });
+}
 
-          <div class="form-row">
-            <label for="missionSelect">Mission-XP:</label>
-            <select id="missionSelect">
-              <option value="">– Mission wählen –</option>
-            </select>
-            <button id="xpMissionSelectedBtn" class="btn-secondary btn-sm">
-              Mission an ausgewählte
-            </button>
-            <button id="xpMissionAllBtn" class="btn-secondary btn-sm">
-              Mission an alle
-            </button>
-          </div>
+document.getElementById("add-student").onclick = () => {
+  api("/api/admin/students", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      username: student-name.value,
+      password: student-pass.value
+    })
+  }).then(loadStudents);
+};
 
-          <div class="hint">
-            Spieler unten auswählen (Checkbox). Wenn nichts ausgewählt ist,
-            wirken die Buttons „an alle“ auf die komplette Liste.
-          </div>
+async function loadMissions() {
+  const m = await api("/api/admin/missions");
+  const box = document.getElementById("missions");
+  const sel = document.getElementById("mission-select");
+  box.innerHTML = "";
+  sel.innerHTML = `<option value="">–</option>`;
+  m.forEach(ms => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      ${ms.title} (${ms.xp_value} XP)
+      <button data-id="${ms.id}" class="del">Löschen</button>
+    `;
+    box.appendChild(div);
 
-          <!-- Liste der Spieler für XP -->
-          <table style="margin-top: 10px;">
-            <thead>
-              <tr>
-                <th class="checkbox-cell">
-                  <input type="checkbox" id="selectAllStudents" />
-                </th>
-                <th>Name</th>
-                <th>XP</th>
-                <th>Highest</th>
-              </tr>
-            </thead>
-            <tbody id="xpStudentTableBody"></tbody>
-          </table>
+    sel.innerHTML += `<option value="${ms.id}">${ms.title}</option>`;
 
-          <div id="xpError" class="error-banner" style="display:none;"></div>
-          <div id="xpSuccess" class="success-banner" style="display:none;"></div>
-
-          <div class="section-footer">
-            Alle Änderungen an XP werden sofort in der Datenbank gespeichert.
-          </div>
-        </section>
-
-        <!-- MISSIONEN -->
-        <section id="missionsSection">
-          <h2>Missionen <span class="label">Quests</span></h2>
-          <div class="section-subtitle">
-            Erstelle Missionen mit XP-Wert und optionalem Symbolbild.
-          </div>
-          <div class="section-header-line"></div>
-
-          <form id="missionForm">
-            <div class="form-row">
-              <label for="missionName">Titel:</label>
-              <input
-                id="missionName"
-                type="text"
-                placeholder="z. B. Runen der Logik"
-              />
-            </div>
-            <div class="form-row">
-              <label for="missionXp">XP:</label>
-              <input id="missionXp" type="number" min="1" value="10" />
-              <label for="missionImage">Bild:</label>
-              <input id="missionImage" type="file" accept="image/*" />
-              <button type="submit">Mission anlegen</button>
-            </div>
-          </form>
-
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Mission</th>
-                <th>XP</th>
-                <th>Bild</th>
-                <th style="text-align:right;">Aktionen</th>
-              </tr>
-            </thead>
-            <tbody id="missionTableBody"></tbody>
-          </table>
-
-          <div id="missionError" class="error-banner" style="display:none;"></div>
-          <div class="section-footer">
-            Bilder sind optional – ideal für wiedererkennbare Quests.
-          </div>
-        </section>
-      </div>
-    </div>
-  </main>
-
-  <script>
-    // -----------------------------
-    // Helpers
-    // -----------------------------
-
-    async function apiJson(url, options = {}) {
-      const res = await fetch(url, {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        ...options,
+    div.querySelector(".del").onclick = () =>
+      api("/api/admin/missions/" + ms.id, { method: "DELETE" }).then(() => {
+        loadMissions();
       });
+  });
+}
+
+document.getElementById("mission-form").onsubmit = (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  fetch("/api/admin/missions", {
+    method: "POST",
+    body: fd,
+  }).then(() => {
+    e.target.reset();
+    loadMissions();
+  });
+};
+
+document.getElementById("xp-selected").onclick = () => {
+  const ids = [...document.querySelectorAll(".chk:checked")].map(c => Number(c.value));
+  const xp = Number(document.getElementById("xp").value);
+  const missionId = document.getElementById("mission-select").value || null;
+
+  api("/api/admin/xp", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ studentIds: ids, xp, missionId })
+  }).then(loadStudents);
+};
+
+document.getElementById("xp-all").onclick = () => {
+  const xp = Number(document.getElementById("xp").value);
+  const missionId = document.getElementById("mission-select").value || null;
+
+  api("/api/admin/xp", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ all: true, xp, missionId })
+  }).then(loadStudents);
+};
+
+loadClasses();
+loadStudents();
+loadMissions();
+</script>
 
-      if (res.status === 401 || res.status === 403) {
-        // Session abgelaufen oder kein Admin → zurück zum Login
-        window.location.href = "/";
-        return;
-      }
-
-      const text = await res.text();
-      try {
-        return JSON.parse(text || "{}");
-      } catch {
-        return {};
-      }
-    }
-
-    async function apiGet(url) {
-      return apiJson(url, { method: "GET" });
-    }
-
-    async function apiPost(url, body) {
-      return apiJson(url, {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
-    }
-
-    async function apiDelete(url) {
-      return apiJson(url, {
-        method: "DELETE",
-      });
-    }
-
-    // -----------------------------
-    // State
-    // -----------------------------
-
-    let studentsCache = [];
-    let missionsCache = [];
-    let activeClassId = null;
-
-    // -----------------------------
-    // DOM-Refs
-    // -----------------------------
-
-    const activeClassPill = document.getElementById("activeClassPill");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    // Klassen
-    const classNameInput = document.getElementById("className");
-    const addClassBtn = document.getElementById("addClassBtn");
-    const classTableBody = document.getElementById("classTableBody");
-    const classError = document.getElementById("classError");
-
-    // Schüler
-    const studentNameInput = document.getElementById("studentName");
-    const studentPasswordInput = document.getElementById("studentPassword");
-    const addStudentBtn = document.getElementById("addStudentBtn");
-    const studentTableBody = document.getElementById("studentTableBody");
-    const studentError = document.getElementById("studentError");
-
-    // XP
-    const xpAmountInput = document.getElementById("xpAmount");
-    const xpSelectedBtn = document.getElementById("xpSelectedBtn");
-    const xpAllBtn = document.getElementById("xpAllBtn");
-    const missionSelect = document.getElementById("missionSelect");
-    const xpMissionSelectedBtn = document.getElementById("xpMissionSelectedBtn");
-    const xpMissionAllBtn = document.getElementById("xpMissionAllBtn");
-    const xpStudentTableBody = document.getElementById("xpStudentTableBody");
-    const selectAllStudents = document.getElementById("selectAllStudents");
-    const xpError = document.getElementById("xpError");
-    const xpSuccess = document.getElementById("xpSuccess");
-
-    // Missionen
-    const missionForm = document.getElementById("missionForm");
-    const missionNameInput = document.getElementById("missionName");
-    const missionXpInput = document.getElementById("missionXp");
-    const missionImageInput = document.getElementById("missionImage");
-    const missionTableBody = document.getElementById("missionTableBody");
-    const missionError = document.getElementById("missionError");
-
-    // -----------------------------
-    // Klassen
-    // -----------------------------
-
-    async function loadActiveClass() {
-      classError.style.display = "none";
-      const data = await apiGet("/api/admin/active-class");
-      if (!data || !data.id) {
-        activeClassId = null;
-        activeClassPill.textContent = "Aktive Klasse: –";
-        return;
-      }
-      activeClassId = data.id;
-      activeClassPill.textContent = "Aktive Klasse: " + data.name;
-    }
-
-    async function loadClasses() {
-      classError.style.display = "none";
-      const data = await apiGet("/api/admin/classes");
-      if (!Array.isArray(data)) {
-        classError.textContent = "Klassen konnten nicht geladen werden.";
-        classError.style.display = "block";
-        return;
-      }
-
-      classTableBody.innerHTML = "";
-      data.forEach((cls) => {
-        const tr = document.createElement("tr");
-
-        const idTd = document.createElement("td");
-        idTd.textContent = cls.id;
-        tr.appendChild(idTd);
-
-        const nameTd = document.createElement("td");
-        nameTd.textContent = cls.name;
-        tr.appendChild(nameTd);
-
-        const statusTd = document.createElement("td");
-        if (cls.is_active) {
-          const badge = document.createElement("span");
-          badge.className = "badge";
-          badge.textContent = "Aktiv";
-          statusTd.appendChild(badge);
-        } else {
-          const badge = document.createElement("span");
-          badge.className = "badge badge-soft";
-          badge.textContent = "Inaktiv";
-          statusTd.appendChild(badge);
-        }
-        tr.appendChild(statusTd);
-
-        const actionsTd = document.createElement("td");
-        actionsTd.style.textAlign = "right";
-
-        const activateBtn = document.createElement("button");
-        activateBtn.className = "btn-secondary btn-sm";
-        activateBtn.textContent = "Aktivieren";
-        activateBtn.onclick = () => setActiveClass(cls.id);
-        actionsTd.appendChild(activateBtn);
-
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-danger btn-sm";
-        delBtn.style.marginLeft = "6px";
-        delBtn.textContent = "Löschen";
-        delBtn.onclick = () => deleteClass(cls.id, cls.name);
-        actionsTd.appendChild(delBtn);
-
-        tr.appendChild(actionsTd);
-
-        classTableBody.appendChild(tr);
-      });
-    }
-
-    async function setActiveClass(id) {
-      const res = await apiPost("/api/admin/active-class", { class_id: id });
-      if (res && res.success) {
-        await loadActiveClass();
-        await loadStudents();
-        showXpInfo("Aktive Klasse geändert.");
-      } else {
-        classError.textContent = "Aktive Klasse konnte nicht gesetzt werden.";
-        classError.style.display = "block";
-      }
-    }
-
-    async function deleteClass(id, name) {
-      if (!confirm(`Klasse "${name}" wirklich löschen?`)) return;
-      const res = await apiDelete("/api/admin/classes/" + id);
-      if (res && res.success) {
-        await loadClasses();
-        await loadActiveClass();
-        await loadStudents();
-      } else {
-        classError.textContent = "Klasse konnte nicht gelöscht werden.";
-        classError.style.display = "block";
-      }
-    }
-
-    addClassBtn.addEventListener("click", async () => {
-      const name = classNameInput.value.trim();
-      if (!name) return;
-
-      const res = await apiPost("/api/admin/classes", { name });
-      if (res && res.success) {
-        classNameInput.value = "";
-        await loadClasses();
-      } else {
-        classError.textContent = "Klasse konnte nicht angelegt werden.";
-        classError.style.display = "block";
-      }
-    });
-
-    // -----------------------------
-    // Schüler
-    // -----------------------------
-
-    async function loadStudents() {
-      studentError.style.display = "none";
-      const data = await apiGet("/api/admin/students");
-      if (!Array.isArray(data)) {
-        studentError.textContent = "Schüler:innen konnten nicht geladen werden.";
-        studentError.style.display = "block";
-        return;
-      }
-      studentsCache = data;
-      renderStudents();
-      renderXpStudentList();
-    }
-
-    function renderStudents() {
-      studentTableBody.innerHTML = "";
-      studentsCache.forEach((s) => {
-        const tr = document.createElement("tr");
-
-        const idTd = document.createElement("td");
-        idTd.textContent = s.id;
-        tr.appendChild(idTd);
-
-        const nameTd = document.createElement("td");
-        nameTd.textContent = s.username;
-        tr.appendChild(nameTd);
-
-        const xpTd = document.createElement("td");
-        xpTd.textContent = s.xp ?? 0;
-        tr.appendChild(xpTd);
-
-        const hXpTd = document.createElement("td");
-        hXpTd.textContent = s.highest_xp ?? 0;
-        tr.appendChild(hXpTd);
-
-        const actionsTd = document.createElement("td");
-        actionsTd.style.textAlign = "right";
-
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-danger btn-sm";
-        delBtn.textContent = "Löschen";
-        delBtn.onclick = () => deleteStudent(s.id, s.username);
-        actionsTd.appendChild(delBtn);
-
-        tr.appendChild(actionsTd);
-
-        studentTableBody.appendChild(tr);
-      });
-    }
-
-    async function deleteStudent(id, username) {
-      if (!confirm(`Spieler "${username}" wirklich löschen?`)) return;
-      const res = await apiDelete("/api/admin/students/" + id);
-      if (res && res.success) {
-        await loadStudents();
-      } else {
-        studentError.textContent = "Spieler konnte nicht gelöscht werden.";
-        studentError.style.display = "block";
-      }
-    }
-
-    addStudentBtn.addEventListener("click", async () => {
-      const username = studentNameInput.value.trim();
-      const password = studentPasswordInput.value.trim();
-      if (!username || !password) return;
-
-      const res = await apiPost("/api/admin/students", { username, password });
-      if (res && res.success) {
-        studentNameInput.value = "";
-        studentPasswordInput.value = "";
-        await loadStudents();
-      } else {
-        studentError.textContent = "Spieler konnte nicht angelegt werden.";
-        studentError.style.display = "block";
-      }
-    });
-
-    // -----------------------------
-    // XP-VERGABE
-    // -----------------------------
-
-    function renderXpStudentList() {
-      xpStudentTableBody.innerHTML = "";
-      selectAllStudents.checked = false;
-
-      studentsCache.forEach((s) => {
-        const tr = document.createElement("tr");
-
-        const cbTd = document.createElement("td");
-        cbTd.className = "checkbox-cell";
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.dataset.id = s.id;
-        cbTd.appendChild(cb);
-        tr.appendChild(cbTd);
-
-        const nameTd = document.createElement("td");
-        nameTd.textContent = s.username;
-        tr.appendChild(nameTd);
-
-        const xpTd = document.createElement("td");
-        const xpDiv = document.createElement("div");
-        xpDiv.className = "xp-row";
-
-        const xpPill = document.createElement("div");
-        xpPill.className = "xp-pill";
-        xpPill.innerHTML = `<span>${s.xp ?? 0}</span> XP`;
-        xpDiv.appendChild(xpPill);
-
-        xpTd.appendChild(xpDiv);
-        tr.appendChild(xpTd);
-
-        const hTd = document.createElement("td");
-        hTd.textContent = s.highest_xp ?? 0;
-        tr.appendChild(hTd);
-
-        xpStudentTableBody.appendChild(tr);
-      });
-    }
-
-    function getSelectedStudentIds() {
-      const cbs = xpStudentTableBody.querySelectorAll("input[type=checkbox]");
-      const ids = [];
-      cbs.forEach((cb) => {
-        if (cb.checked) {
-          ids.push(parseInt(cb.dataset.id, 10));
-        }
-      });
-      return ids;
-    }
-
-    selectAllStudents.addEventListener("change", () => {
-      const cbs = xpStudentTableBody.querySelectorAll("input[type=checkbox]");
-      cbs.forEach((cb) => {
-        cb.checked = selectAllStudents.checked;
-      });
-    });
-
-    function showXpError(msg) {
-      xpError.textContent = msg;
-      xpError.style.display = "block";
-      xpSuccess.style.display = "none";
-    }
-
-    function showXpInfo(msg) {
-      xpSuccess.textContent = msg;
-      xpSuccess.style.display = "block";
-      xpError.style.display = "none";
-    }
-
-    async function giveXpTo(ids, amount) {
-      for (const id of ids) {
-        await apiPost("/api/admin/xp", { student_id: id, xp: amount });
-      }
-      await loadStudents();
-    }
-
-    async function giveMissionXpTo(ids, missionId) {
-      for (const id of ids) {
-        await apiPost("/api/admin/xp/mission", {
-          student_id: id,
-          mission_id: missionId,
-        });
-      }
-      await loadStudents();
-    }
-
-    xpSelectedBtn.addEventListener("click", async () => {
-      const amount = parseInt(xpAmountInput.value, 10);
-      if (!amount || amount <= 0) {
-        showXpError("Gib einen XP-Wert größer 0 an.");
-        return;
-      }
-      const ids = getSelectedStudentIds();
-      if (!ids.length) {
-        showXpError("Wähle mindestens einen Spieler aus.");
-        return;
-      }
-      await giveXpTo(ids, amount);
-      showXpInfo(`+${amount} XP an ${ids.length} Spieler vergeben.`);
-    });
-
-    xpAllBtn.addEventListener("click", async () => {
-      const amount = parseInt(xpAmountInput.value, 10);
-      if (!amount || amount <= 0) {
-        showXpError("Gib einen XP-Wert größer 0 an.");
-        return;
-      }
-      if (!studentsCache.length) {
-        showXpError("Keine Spieler vorhanden.");
-        return;
-      }
-      const ids = studentsCache.map((s) => s.id);
-      await giveXpTo(ids, amount);
-      showXpInfo(`+${amount} XP an alle Spieler vergeben.`);
-    });
-
-    xpMissionSelectedBtn.addEventListener("click", async () => {
-      const missionId = parseInt(missionSelect.value, 10);
-      if (!missionId) {
-        showXpError("Wähle eine Mission aus.");
-        return;
-      }
-      const ids = getSelectedStudentIds();
-      if (!ids.length) {
-        showXpError("Wähle mindestens einen Spieler aus.");
-        return;
-      }
-      await giveMissionXpTo(ids, missionId);
-      showXpInfo(`Mission-XP an ${ids.length} Spieler vergeben.`);
-    });
-
-    xpMissionAllBtn.addEventListener("click", async () => {
-      const missionId = parseInt(missionSelect.value, 10);
-      if (!missionId) {
-        showXpError("Wähle eine Mission aus.");
-        return;
-      }
-      if (!studentsCache.length) {
-        showXpError("Keine Spieler vorhanden.");
-        return;
-      }
-      const ids = studentsCache.map((s) => s.id);
-      await giveMissionXpTo(ids, missionId);
-      showXpInfo(`Mission-XP an alle Spieler vergeben.`);
-    });
-
-    // -----------------------------
-    // Missionen
-    // -----------------------------
-
-    async function loadMissions() {
-      missionError.style.display = "none";
-      const data = await apiGet("/api/admin/missions");
-      if (!Array.isArray(data)) {
-        missionError.textContent = "Missionen konnten nicht geladen werden.";
-        missionError.style.display = "block";
-        return;
-      }
-      missionsCache = data;
-      renderMissions();
-      renderMissionSelect();
-    }
-
-    function renderMissions() {
-      missionTableBody.innerHTML = "";
-      missionsCache.forEach((m) => {
-        const tr = document.createElement("tr");
-
-        const idTd = document.createElement("td");
-        idTd.textContent = m.id;
-        tr.appendChild(idTd);
-
-        const nameTd = document.createElement("td");
-        nameTd.textContent = m.name;
-        tr.appendChild(nameTd);
-
-        const xpTd = document.createElement("td");
-        xpTd.textContent = m.xp;
-        tr.appendChild(xpTd);
-
-        const imgTd = document.createElement("td");
-        if (m.image_path) {
-          const img = document.createElement("img");
-          img.src = m.image_path;
-          img.alt = m.name;
-          img.className = "mission-thumb";
-          imgTd.appendChild(img);
-        } else {
-          imgTd.textContent = "–";
-        }
-        tr.appendChild(imgTd);
-
-        const actionsTd = document.createElement("td");
-        actionsTd.style.textAlign = "right";
-        const delBtn = document.createElement("button");
-        delBtn.className = "btn-danger btn-sm";
-        delBtn.textContent = "Löschen";
-        delBtn.onclick = () => deleteMission(m.id, m.name);
-        actionsTd.appendChild(delBtn);
-        tr.appendChild(actionsTd);
-
-        missionTableBody.appendChild(tr);
-      });
-    }
-
-    function renderMissionSelect() {
-      missionSelect.innerHTML = '<option value="">– Mission wählen –</option>';
-      missionsCache.forEach((m) => {
-        const opt = document.createElement("option");
-        opt.value = m.id;
-        opt.textContent = `${m.name} (+${m.xp} XP)`;
-        missionSelect.appendChild(opt);
-      });
-    }
-
-    async function deleteMission(id, name) {
-      if (!confirm(`Mission "${name}" wirklich löschen?`)) return;
-      const res = await apiDelete("/api/admin/missions/" + id);
-      if (res && res.success) {
-        await loadMissions();
-      } else {
-        missionError.textContent = "Mission konnte nicht gelöscht werden.";
-        missionError.style.display = "block";
-      }
-    }
-
-    missionForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      missionError.style.display = "none";
-
-      const name = missionNameInput.value.trim();
-      const xp = parseInt(missionXpInput.value, 10);
-      if (!name || !xp || xp <= 0) {
-        missionError.textContent = "Titel und XP-Wert sind erforderlich.";
-        missionError.style.display = "block";
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("name", name);
-      formData.append("xp", xp);
-      if (missionImageInput.files[0]) {
-        formData.append("image", missionImageInput.files[0]);
-      }
-
-      const res = await fetch("/api/admin/missions", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        missionError.textContent = "Mission konnte nicht angelegt werden.";
-        missionError.style.display = "block";
-        return;
-      }
-
-      missionNameInput.value = "";
-      missionXpInput.value = "10";
-      missionImageInput.value = "";
-      await loadMissions();
-    });
-
-    // -----------------------------
-    // Logout
-    // -----------------------------
-
-    logoutBtn.addEventListener("click", async () => {
-      await apiPost("/api/logout", {});
-      window.location.href = "/";
-    });
-
-    // -----------------------------
-    // Init
-    // -----------------------------
-
-    async function init() {
-      await loadActiveClass();
-      await loadClasses();
-      await loadStudents();
-      await loadMissions();
-
-      // Optional: regelmäßige Aktualisierung (z. B. alle 20s)
-      setInterval(() => {
-        loadStudents();
-      }, 20000);
-    }
-
-    init();
-  </script>
 </body>
 </html>
